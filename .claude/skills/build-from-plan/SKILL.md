@@ -1,6 +1,6 @@
 ---
 name: build-from-plan
-description: "Orchestrate sequential implementation of tasks from an existing plan. Runs implementer, test-writer, and reviewer agents for each task. Supports auto-selecting incomplete tasks and continuous mode for implementing all remaining tasks. Triggers on: '/build', 'implement task', 'build task', 'build from plan', 'execute task'."
+description: "Orchestrate sequential implementation of tasks from an existing plan. Runs super-typescript-developer, test-writer, and reviewer agents for each task. Supports auto-selecting incomplete tasks and continuous mode for implementing all remaining tasks. Triggers on: '/build-from-plan', 'implement task', 'build task', 'build from plan', 'execute task'."
 version: 1.1.0
 ---
 
@@ -10,7 +10,7 @@ Orchestrate a sequential implementation pipeline for tasks from an existing plan
 
 ## Usage
 
-`/build [plan-path] [task-id] [--continuous]`
+`/build-from-plan [plan-path] [task-id] [--continuous]`
 
 **Parameters:**
 - `plan-path`: Path to the plan document (required)
@@ -70,7 +70,7 @@ Present the task details to the user and wait for approval before proceeding.
 
 ### Phase 1: Implement Task
 
-Spawn an implementer agent with the task details extracted in Phase 0:
+Spawn an super-typescript-developer.md agent with the task details extracted in Phase 0:
 
 ```
 Implement [task-name].
@@ -86,16 +86,16 @@ Read CLAUDE.md for conventions. Read the plan for context.
 Do not modify files outside the scope of this task.
 ```
 
-Wait for the implementer to complete. Review the implementer's output report for any issues or ambiguities before proceeding to testing.
+Wait for the super-typescript-developer to complete. Review the super-typescript-developer's output report for any issues or ambiguities before proceeding to testing.
 
 ### Phase 2: Write Tests
 
-Spawn a test-writer agent to test the implemented task:
+Spawn a test-writer agent to test the super-typescript-developer task:
 
 ```
 Write tests for [task-name].
 
-Implementation files: [files created by implementer]
+Implementation files: [files created by super-typescript-developer]
 Requirements to verify: [FR-1, FR-3, NFR-2]
 Skills to reference: [list any relevant testing skill paths]
 
@@ -103,7 +103,7 @@ Read the implementation first, then write tests that verify each requirement.
 Run the tests before reporting.
 ```
 
-Wait for the test-writer to finish. If tests fail, document the failures — do not re-run the implementer. Collect the test results for the review phase.
+Wait for the test-writer to finish. If tests fail, document the failures — do not re-run the super-typescript-developer. Collect the test results for the review phase.
 
 ### Phase 3: Review
 
@@ -187,14 +187,14 @@ Skills to reference:
 - `.claude/skills/testing-patterns/SKILL.md` — follow for test structure
 ```
 
-The agent will read these skill files before starting and treat them as constraints. You can specify different skills for different agents — the implementer might get coding-standards while the test-writer gets testing-patterns.
+The agent will read these skill files before starting and treat them as constraints. You can specify different skills for different agents — the super-typescript-developer might get coding-standards while the test-writer gets testing-patterns.
 
 To discover available skills, check `.claude/skills/` at the start of Phase 0 and decide which are relevant to which agents.
 
 ## Error Handling
 
-- If an implementer reports ambiguities: pause and ask the user before continuing to tests
-- If tests fail: proceed to review with failure documentation; don't re-run the implementer automatically
+- If an super-typescript-developer reports ambiguities: pause and ask the user before continuing to tests
+- If tests fail: proceed to review with failure documentation; don't re-run the super-typescript-developer automatically
 - If the reviewer returns REQUEST_CHANGES: present the changes to the user and ask if they want to run a fix cycle
 - If any agent fails entirely: report the failure and ask the user how to proceed
 
