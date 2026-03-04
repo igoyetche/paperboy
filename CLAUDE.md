@@ -83,6 +83,14 @@ tsconfig.json
 npm install
 ```
 
+Copy `.env.example` to `.env` and fill in your credentials for local development:
+
+```bash
+cp .env.example .env
+```
+
+> `.env` is only loaded when running locally. In Docker, environment variables are injected at container runtime and take precedence automatically.
+
 ## Configuration
 
 Required environment variables (see `.env.example`):
