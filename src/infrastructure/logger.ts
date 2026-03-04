@@ -3,7 +3,8 @@ import type { Logger } from "pino";
 import type { DeliveryLogger } from "../domain/ports.js";
 
 export function createPinoLogger(level: string): Logger {
-  return pino({ level });
+  // Write to stderr — stdout is reserved for JSON-RPC when using stdio transport
+  return pino({ level }, pino.destination(2));
 }
 
 export function createDeliveryLogger(logger: Logger): DeliveryLogger {

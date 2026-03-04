@@ -1,6 +1,6 @@
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
-import epubGen from "epub-gen-memory";
+import { EPub } from "epub-gen-memory";
 import type { ContentConverter } from "../../domain/ports.js";
 import type { Title, Author, MarkdownContent } from "../../domain/values/index.js";
 import { EpubDocument } from "../../domain/values/index.js";
@@ -36,10 +36,10 @@ export class MarkdownEpubConverter implements ContentConverter {
         allowedSchemes: ["http", "https", "mailto"],
       });
 
-      const buffer = await (epubGen as any)(
+      const buffer = await new EPub(
         { title: title.value, author: author.value },
         [{ title: title.value, content: safeHtml }],
-      );
+      ).genEpub();
 
       return ok(new EpubDocument(title.value, buffer));
     } catch (error) {

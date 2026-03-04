@@ -39,6 +39,36 @@ describe("MarkdownEpubConverter", () => {
     }
   });
 
+  it("does not return a conversion error on valid input", async () => {
+    const result = await converter.toEpub(
+      makeTitle("Valid Book"),
+      makeContent("# Hello\n\nSome content."),
+      makeAuthor("Claude"),
+    );
+    // Explicitly assert no error — catches broken epub-gen-memory imports
+    // that get swallowed by the try/catch and silently return err(...)
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Expected conversion to succeed but got error: ${result.error.message}`);
+    }
+  });
+
+  it("produces a non-empty EPUB buffer with valid zip magic bytes", async () => {
+    const result = await converter.toEpub(
+      makeTitle("Magic Bytes Test"),
+      makeContent("# Hello"),
+      makeAuthor("Claude"),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // EPUB files are ZIP archives — first bytes must be PK\x03\x04
+      expect(result.value.buffer[0]).toBe(0x50); // P
+      expect(result.value.buffer[1]).toBe(0x4b); // K
+      expect(result.value.buffer[2]).toBe(0x03);
+      expect(result.value.buffer[3]).toBe(0x04);
+    }
+  });
+
   it("generates a URL-safe filename from title", async () => {
     const result = await converter.toEpub(
       makeTitle("Clean Architecture: A Guide"),
