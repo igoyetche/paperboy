@@ -97,7 +97,7 @@ if (config.http) {
 
   app.listen(config.http.port, () => {
     pinoLogger.info(
-      { port: config.http!.port },
+      { port: config.http!.port, url: `http://localhost:${config.http!.port}/mcp` },
       "Send to Kindle MCP server started (HTTP)",
     );
   });
