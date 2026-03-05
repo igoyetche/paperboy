@@ -1,4 +1,5 @@
 import type { SendToKindleService } from "../domain/send-to-kindle-service.js";
+import type { DeviceRegistry } from "../domain/device-registry.js";
 import { Title, Author, MarkdownContent } from "../domain/values/index.js";
 import type { DomainError } from "../domain/errors.js";
 
@@ -40,18 +41,24 @@ function mapErrorToResponse(error: DomainError): McpToolResponse {
   };
 }
 
+/** Implements FR-3: MCP adapter that resolves device via DeviceRegistry before invoking service */
 export class ToolHandler {
   constructor(
     private readonly service: SendToKindleService,
     private readonly defaultAuthor: string,
+    private readonly devices: DeviceRegistry,
   ) {}
 
   async handle(args: {
     title: string;
     content: string;
     author?: string;
+    device?: string;
   }): Promise<McpToolResponse> {
-    // Construct value objects
+    // Resolve device first
+    const deviceResult = this.devices.resolve(args.device);
+    if (!deviceResult.ok) return mapErrorToResponse(deviceResult.error);
+
     const titleResult = Title.create(args.title);
     if (!titleResult.ok) return mapErrorToResponse(titleResult.error);
 
@@ -62,11 +69,11 @@ export class ToolHandler {
     const authorResult = Author.create(authorRaw);
     if (!authorResult.ok) return mapErrorToResponse(authorResult.error);
 
-    // Execute domain service
     const result = await this.service.execute(
       titleResult.value,
       contentResult.value,
       authorResult.value,
+      deviceResult.value,
     );
 
     if (!result.ok) return mapErrorToResponse(result.error);
@@ -77,7 +84,7 @@ export class ToolHandler {
           type: "text",
           text: JSON.stringify({
             success: true,
-            message: `Document '${result.value.title}' sent to Kindle successfully.`,
+            message: `Document '${result.value.title}' sent to Kindle (${result.value.deviceName}) successfully.`,
             sizeBytes: result.value.sizeBytes,
           }),
         },

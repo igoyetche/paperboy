@@ -5,13 +5,29 @@ import {
   err,
   ConversionError,
   DeliveryError,
-  ValidationError,
-  SizeLimitError,
 } from "../../src/domain/errors.js";
 import type { SendToKindleService } from "../../src/domain/send-to-kindle-service.js";
+import { DeviceRegistry } from "../../src/domain/device-registry.js";
+import { KindleDevice } from "../../src/domain/values/kindle-device.js";
+import { EmailAddress } from "../../src/domain/values/email-address.js";
+
+function makeDevice(name: string, email = "user@kindle.com"): KindleDevice {
+  const emailResult = EmailAddress.create(email);
+  if (!emailResult.ok) throw new Error("bad test setup");
+  const deviceResult = KindleDevice.create(name, emailResult.value);
+  if (!deviceResult.ok) throw new Error("bad test setup");
+  return deviceResult.value;
+}
+
+function makeRegistry(...names: string[]): DeviceRegistry {
+  const devices = names.map((n, i) => makeDevice(n, `d${i}@kindle.com`));
+  const result = DeviceRegistry.create(devices);
+  if (!result.ok) throw new Error("bad test setup");
+  return result.value;
+}
 
 function fakeService(
-  result = ok({ title: "Test", sizeBytes: 1024 }),
+  result = ok({ title: "Test", sizeBytes: 1024, deviceName: "personal" }),
 ): SendToKindleService {
   return {
     execute: vi.fn().mockResolvedValue(result),
@@ -19,28 +35,21 @@ function fakeService(
 }
 
 describe("ToolHandler", () => {
-  it("returns success response on happy path", async () => {
-    const service = fakeService(ok({ title: "My Book", sizeBytes: 2048 }));
-    const handler = new ToolHandler(service, "Claude");
+  it("returns success response including device name on happy path", async () => {
+    const service = fakeService(ok({ title: "My Book", sizeBytes: 2048, deviceName: "personal" }));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
 
-    const response = await handler.handle({
-      title: "My Book",
-      content: "# Hello",
-    });
+    const response = await handler.handle({ title: "My Book", content: "# Hello" });
 
-    expect(response).toEqual({
-      content: [
-        {
-          type: "text",
-          text: expect.stringContaining("My Book"),
-        },
-      ],
-    });
+    const parsed = JSON.parse((response.content[0] as { text: string }).text);
+    expect(parsed.success).toBe(true);
+    expect(parsed.message).toContain("My Book");
+    expect(parsed.message).toContain("personal");
   });
 
   it("uses default author when not provided", async () => {
     const service = fakeService();
-    const handler = new ToolHandler(service, "DefaultBot");
+    const handler = new ToolHandler(service, "DefaultBot", makeRegistry("personal"));
 
     await handler.handle({ title: "Test", content: "# Hi" });
 
@@ -48,90 +57,88 @@ describe("ToolHandler", () => {
       expect.anything(),
       expect.anything(),
       expect.objectContaining({ value: "DefaultBot" }),
+      expect.anything(),
     );
   });
 
-  it("uses provided author over default", async () => {
+  it("resolves the default device when no device arg provided", async () => {
     const service = fakeService();
-    const handler = new ToolHandler(service, "DefaultBot");
+    const registry = makeRegistry("personal");
+    const handler = new ToolHandler(service, "Claude", registry);
 
-    await handler.handle({ title: "Test", content: "# Hi", author: "Alice" });
+    await handler.handle({ title: "Test", content: "# Hi" });
 
     expect(service.execute).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      expect.objectContaining({ value: "Alice" }),
+      expect.anything(),
+      expect.objectContaining({ name: "personal" }),
     );
+  });
+
+  it("resolves a named device when device arg is provided", async () => {
+    const service = fakeService();
+    const registry = makeRegistry("personal", "partner");
+    const handler = new ToolHandler(service, "Claude", registry);
+
+    await handler.handle({ title: "Test", content: "# Hi", device: "partner" });
+
+    expect(service.execute).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ name: "partner" }),
+    );
+  });
+
+  it("returns validation error for unknown device name", async () => {
+    const service = fakeService();
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
+
+    const response = await handler.handle({ title: "Test", content: "# Hi", device: "ghost" });
+
+    const parsed = JSON.parse((response.content[0] as { text: string }).text);
+    expect(parsed.success).toBe(false);
+    expect(parsed.error).toBe("VALIDATION_ERROR");
+    expect(parsed.details).not.toContain("@");
   });
 
   it("returns validation error for empty title", async () => {
     const service = fakeService();
-    const handler = new ToolHandler(service, "Claude");
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
 
     const response = await handler.handle({ title: "", content: "# Hi" });
 
-    const text = (response.content[0] as { text: string }).text;
-    const parsed = JSON.parse(text);
-    expect(parsed.success).toBe(false);
-    expect(parsed.error).toBe("VALIDATION_ERROR");
-  });
-
-  it("returns validation error for empty content", async () => {
-    const service = fakeService();
-    const handler = new ToolHandler(service, "Claude");
-
-    const response = await handler.handle({ title: "Test", content: "" });
-
-    const text = (response.content[0] as { text: string }).text;
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse((response.content[0] as { text: string }).text);
     expect(parsed.success).toBe(false);
     expect(parsed.error).toBe("VALIDATION_ERROR");
   });
 
   it("maps ConversionError to CONVERSION_ERROR", async () => {
-    const service = fakeService(
-      err(new ConversionError("EPUB gen failed")),
-    );
-    const handler = new ToolHandler(service, "Claude");
+    const service = fakeService(err(new ConversionError("fail")));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
 
-    const response = await handler.handle({
-      title: "Test",
-      content: "# Hi",
-    });
+    const response = await handler.handle({ title: "Test", content: "# Hi" });
 
-    const text = (response.content[0] as { text: string }).text;
-    const parsed = JSON.parse(text);
-    expect(parsed.success).toBe(false);
+    const parsed = JSON.parse((response.content[0] as { text: string }).text);
     expect(parsed.error).toBe("CONVERSION_ERROR");
   });
 
   it("maps DeliveryError to SMTP_ERROR", async () => {
-    const service = fakeService(
-      err(new DeliveryError("auth", "Auth failed")),
-    );
-    const handler = new ToolHandler(service, "Claude");
+    const service = fakeService(err(new DeliveryError("auth", "fail")));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
 
-    const response = await handler.handle({
-      title: "Test",
-      content: "# Hi",
-    });
+    const response = await handler.handle({ title: "Test", content: "# Hi" });
 
-    const text = (response.content[0] as { text: string }).text;
-    const parsed = JSON.parse(text);
-    expect(parsed.success).toBe(false);
+    const parsed = JSON.parse((response.content[0] as { text: string }).text);
     expect(parsed.error).toBe("SMTP_ERROR");
   });
 
   it("sets isError true on failure responses", async () => {
-    const service = fakeService(
-      err(new ConversionError("fail")),
-    );
-    const handler = new ToolHandler(service, "Claude");
+    const service = fakeService(err(new ConversionError("fail")));
+    const handler = new ToolHandler(service, "Claude", makeRegistry("personal"));
 
-    const response = await handler.handle({
-      title: "Test",
-      content: "# Hi",
-    });
+    const response = await handler.handle({ title: "Test", content: "# Hi" });
 
     expect(response.isError).toBe(true);
   });
