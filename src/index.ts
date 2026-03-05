@@ -15,7 +15,6 @@ const deliveryLogger = createDeliveryLogger(pinoLogger);
 
 const converter = new MarkdownEpubConverter();
 const mailer = new SmtpMailer({
-  kindle: config.kindle,
   sender: config.sender,
   smtp: config.smtp,
 });
