@@ -28,10 +28,10 @@ function makeRegistry(...names: string[]): DeviceRegistry {
 
 function fakeService(
   result = ok({ title: "Test", sizeBytes: 1024, deviceName: "personal" }),
-): SendToKindleService {
+): Pick<SendToKindleService, "execute"> {
   return {
     execute: vi.fn().mockResolvedValue(result),
-  } as unknown as SendToKindleService;
+  };
 }
 
 describe("ToolHandler", () => {
@@ -45,6 +45,7 @@ describe("ToolHandler", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.message).toContain("My Book");
     expect(parsed.message).toContain("personal");
+    expect(parsed.message).not.toContain("@");
     expect(response.isError).toBeUndefined();
   });
 

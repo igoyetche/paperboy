@@ -25,6 +25,11 @@ function mapErrorToResponse(error: DomainError): McpToolResponse {
     case "delivery":
       errorCode = "SMTP_ERROR";
       break;
+    default: {
+      const _exhaustive: never = error;
+      errorCode = "UNKNOWN_ERROR";
+      break;
+    }
   }
   return {
     content: [
@@ -44,7 +49,7 @@ function mapErrorToResponse(error: DomainError): McpToolResponse {
 /** Implements FR-3: MCP adapter that resolves device via DeviceRegistry before invoking service */
 export class ToolHandler {
   constructor(
-    private readonly service: SendToKindleService,
+    private readonly service: Pick<SendToKindleService, "execute">,
     private readonly defaultAuthor: string,
     private readonly devices: DeviceRegistry,
   ) {}
