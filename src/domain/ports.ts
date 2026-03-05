@@ -1,4 +1,4 @@
-import type { Title, Author, MarkdownContent, EpubDocument } from "./values/index.js";
+import type { Title, Author, MarkdownContent, EpubDocument, KindleDevice } from "./values/index.js";
 import type { DeliveryError, ConversionError, Result } from "./errors.js";
 
 export interface ContentConverter {
@@ -10,7 +10,10 @@ export interface ContentConverter {
 }
 
 export interface DocumentMailer {
-  send(document: EpubDocument): Promise<Result<void, DeliveryError>>;
+  send(
+    document: EpubDocument,
+    device: KindleDevice,
+  ): Promise<Result<void, DeliveryError>>;
 }
 
 export interface DeliveryLogger {

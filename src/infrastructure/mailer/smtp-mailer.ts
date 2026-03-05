@@ -2,10 +2,10 @@ import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import type { DocumentMailer } from "../../domain/ports.js";
 import type { EpubDocument } from "../../domain/values/index.js";
+import type { KindleDevice } from "../../domain/values/index.js";
 import { DeliveryError, type Result, ok, err } from "../../domain/errors.js";
 
 export interface SmtpMailerConfig {
-  kindle: { email: string };
   sender: { email: string };
   smtp: { host: string; port: number; user: string; pass: string };
 }
@@ -23,8 +23,8 @@ function categorizeError(
   error: unknown,
 ): { cause: "auth" | "connection" | "rejection"; message: string } {
   if (error instanceof Error) {
-    const code = (error as any).code;
-    const responseCode = (error as any).responseCode;
+    const code = (error as NodeJS.ErrnoException).code;
+    const responseCode = (error as { responseCode?: number }).responseCode;
 
     if (code === "EAUTH") {
       return {
@@ -44,7 +44,7 @@ function categorizeError(
         message: `SMTP connection failed: ${error.message}`,
       };
     }
-    if (responseCode && responseCode >= 500) {
+    if (responseCode !== undefined && responseCode >= 500) {
       return {
         cause: "rejection",
         message: `Email rejected by server: ${error.message}`,
@@ -69,13 +69,16 @@ export class SmtpMailer implements DocumentMailer {
     });
   }
 
-  async send(document: EpubDocument): Promise<Result<void, DeliveryError>> {
+  async send(
+    document: EpubDocument,
+    device: KindleDevice,
+  ): Promise<Result<void, DeliveryError>> {
     const filename = slugify(document.title);
 
     try {
       await this.transporter.sendMail({
         from: this.config.sender.email,
-        to: this.config.kindle.email,
+        to: device.email.value,
         subject: document.title,
         text: "Sent via Send to Kindle MCP Server.",
         attachments: [
