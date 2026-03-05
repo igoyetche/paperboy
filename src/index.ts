@@ -21,29 +21,33 @@ const mailer = new SmtpMailer({
 const service = new SendToKindleService(converter, mailer, deliveryLogger);
 const toolHandler = new ToolHandler(service, config.defaultAuthor, config.devices);
 
+function registerTools(s: McpServer, handler: ToolHandler): void {
+  s.tool(
+    "send_to_kindle",
+    "Convert Markdown content to EPUB and send it to a Kindle device via email. " +
+      "Accepts a title, markdown content, and optional author name.",
+    {
+      title: z.string().describe("Document title that will appear in the Kindle library"),
+      content: z.string().describe("Document content in Markdown format"),
+      author: z
+        .string()
+        .optional()
+        .describe("Author name for document metadata (defaults to configured value)"),
+      device: z
+        .string()
+        .optional()
+        .describe("Name of the Kindle device to send to. Omit to use the default device."),
+    },
+    async (args) => handler.handle(args),
+  );
+}
+
 const server = new McpServer({
   name: "send-to-kindle",
   version: "1.0.0",
 });
 
-server.tool(
-  "send_to_kindle",
-  "Convert Markdown content to EPUB and send it to a Kindle device via email. " +
-    "Accepts a title, markdown content, and optional author name.",
-  {
-    title: z.string().describe("Document title that will appear in the Kindle library"),
-    content: z.string().describe("Document content in Markdown format"),
-    author: z
-      .string()
-      .optional()
-      .describe("Author name for document metadata (defaults to configured value)"),
-    device: z
-      .string()
-      .optional()
-      .describe("Name of the Kindle device to send to (from configured devices)"),
-  },
-  async (args) => toolHandler.handle(args),
-);
+registerTools(server, toolHandler);
 
 // stdio transport (always active)
 const stdioTransport = new StdioServerTransport();
@@ -53,6 +57,7 @@ pinoLogger.info("Send to Kindle MCP server started (stdio)");
 
 // HTTP/SSE transport (if configured)
 if (config.http) {
+  const httpConfig = config.http;
   const { default: express } = await import("express");
   const { StreamableHTTPServerTransport } = await import(
     "@modelcontextprotocol/sdk/server/streamableHttp.js"
@@ -64,7 +69,7 @@ if (config.http) {
   // Bearer token auth middleware
   app.use("/mcp", (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${config.http!.authToken}`) {
+    if (authHeader !== `Bearer ${httpConfig.authToken}`) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
@@ -80,20 +85,7 @@ if (config.http) {
       version: "1.0.0",
     });
 
-    httpServer.tool(
-      "send_to_kindle",
-      "Convert Markdown content to EPUB and send it to a Kindle device via email.",
-      {
-        title: z.string().describe("Document title"),
-        content: z.string().describe("Document content in Markdown format"),
-        author: z.string().optional().describe("Author name"),
-        device: z
-          .string()
-          .optional()
-          .describe("Name of the Kindle device to send to (from configured devices)"),
-      },
-      async (args) => toolHandler.handle(args),
-    );
+    registerTools(httpServer, toolHandler);
 
     await httpServer.connect(httpTransport);
     await httpTransport.handleRequest(req, res, req.body);
@@ -102,9 +94,9 @@ if (config.http) {
   app.get("/mcp", (_req, res) => { res.status(405).end(); });
   app.delete("/mcp", (_req, res) => { res.status(405).end(); });
 
-  app.listen(config.http.port, () => {
+  app.listen(httpConfig.port, () => {
     pinoLogger.info(
-      { port: config.http!.port, url: `http://localhost:${config.http!.port}/mcp` },
+      { port: httpConfig.port, url: `http://localhost:${httpConfig.port}/mcp` },
       "Send to Kindle MCP server started (HTTP)",
     );
   });
