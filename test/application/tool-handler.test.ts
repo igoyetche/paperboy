@@ -45,6 +45,7 @@ describe("ToolHandler", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.message).toContain("My Book");
     expect(parsed.message).toContain("personal");
+    expect(response.isError).toBeUndefined();
   });
 
   it("uses default author when not provided", async () => {
