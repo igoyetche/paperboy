@@ -6,13 +6,12 @@
 
 | Feature | Phase | Specs Affected | Plan | Progress | Status |
 |---------|-------|---|---|---|---|
-| (None) | — | — | — | — | — |
+| Multiple Kindle Addresses | Design | specs/main-spec.md | — | — | 🔄 In Progress |
 
 ## Backlog
 
 | Feature | Phase | Specs Affected | Plan | Priority |
 |---------|-------|---|---|---|
-| Multiple Kindle Addresses | Design | specs/main-spec.md | — | High |
 | URL to Kindle | Design | specs/main-spec.md | — | High |
 | CLI Version + Claude Code Skill | Design | specs/main-spec.md | — | High |
 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
