@@ -1,5 +1,8 @@
 # Send to Kindle MCP Server — System Spec
 
+> Last updated: 2026-03-05
+> Status: Implemented
+
 ## 1. Problem Statement
 
 A user working with an AI assistant (Claude) frequently generates long-form content — summaries, articles, research notes — that they want to read on their Kindle. Today, getting that content onto a Kindle requires manually copying text, formatting it, creating a file, and emailing it to their Kindle address. This multi-step process breaks the conversational flow and discourages the user from sending content to their reading device. The system should let Claude deliver content to a Kindle in a single step, transparently, as part of a normal conversation.

@@ -2,6 +2,105 @@
 
 A single-user MCP server that lets Claude send Markdown content to a Kindle device in one step—no manual formatting, no copy-paste. The system converts Markdown to EPUB and emails it to your configured Kindle address.
 
+---
+
+## Development Workflow — Feature → Design → Spec → Plan → Implement → Test → Validate → Sync
+
+**Core Principle:** A task is NOT done until the spec, plan, and code all reflect the same reality. A feature is NOT done until its acceptance criteria are met, its plan is archived, and the affected specs describe the system as it now exists.
+
+### Document Roles
+
+| Location | Contains | Lifecycle |
+|---|---|---|
+| `docs/features/{backlog,active,done}/` | Change requests — what and why | Created → Active → Done |
+| `docs/designs/` | Technical design — how it will work | Created with feature, updated during implementation |
+| `docs/specs/` | System truth — how things work NOW | Permanent, updated in place |
+| `docs/plans/{backlog,active,done}/` | Task breakdowns — steps to build it | Created → Active → Done |
+| `docs/STATUS.md` | Dashboard — current state of all features | Updated on every status change |
+| `docs/CHANGELOG.md` | Decision log — what diverged and why | Append-only |
+
+### The Pipeline
+
+```
+Feature → Design → Spec → Plan → Implement → Test → Validate → Sync
+```
+
+1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, acceptance criteria
+2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs
+3. **SPEC** — Update affected specs in `docs/specs/` based on approved design; log changes in `docs/CHANGELOG.md`
+4. **PLAN** — Create plan in `docs/plans/backlog/[name].md` with tasks referencing spec requirements; add row to `docs/STATUS.md`
+5. **IMPLEMENT** — Move feature from `features/backlog/` → `features/active/[name].md`, move plan from `plans/backlog/` → `plans/active/[name].md`, update STATUS.md to 🔄 In Progress, build each task
+6. **TEST** — Run verification defined in task; verify acceptance criteria from spec
+7. **VALIDATE** — Check: implementation matches design, satisfies spec, no side effects on other modules
+8. **SYNC** — Mark task done in plan, update design/spec if implementation diverged, log in CHANGELOG.md
+
+Then pick next task and repeat steps 6-8.
+
+**When feature is complete (all tasks done):**
+- Move plan from `plans/active/[name].md` → `plans/done/[name].md`
+- Move feature from `features/active/[name].md` → `features/done/[name].md`
+- Update STATUS.md to ✅ Complete
+- Add summary entry to CHANGELOG.md
+
+### Task Status Legend
+
+```
+[ ]  — Todo
+[~]  — In progress
+[x]  — Done (YYYY-MM-DD)
+[-]  — Dropped (reason)
+[!]  — Blocked (blocker description)
+```
+
+### Completing a Feature
+
+When ALL tasks are [x] or [-]:
+1. Run final validation against ALL feature acceptance criteria
+2. Verify specs reflect what was actually built
+3. Verify design doc reflects the final architecture
+4. Move plan from `plans/active/` to `plans/done/`
+5. Move feature from `features/active/` to `features/done/`
+6. Update `STATUS.md` (mark ✅ Complete)
+7. Add `CHANGELOG.md` entry summarizing the feature completion
+
+### File Movement Rules
+
+Features, plans, and designs have explicit **status folders**. Move files between them as work progresses:
+
+**Features:**
+- Create in `docs/features/backlog/[name].md`
+- Move to `docs/features/active/[name].md` when starting implementation
+- Move to `docs/features/done/[name].md` when all acceptance criteria met
+
+**Plans:**
+- Create in `docs/plans/backlog/[name].md`
+- Move to `docs/plans/active/[name].md` when starting implementation
+- Move to `docs/plans/done/[name].md` when all tasks are [x] or [-]
+
+**Designs:**
+- Create in `docs/designs/[name].md` (no folder structure — designs don't archive)
+- Update in place during implementation, mark status header as "Updated During Implementation"
+
+**Specs:**
+- Live permanently in `docs/specs/[name].md` (no folder structure — specs never archive)
+- Update in place with marker: `> Updated YYYY-MM-DD via feature: [name]`
+- Log every spec change in `CHANGELOG.md`
+
+### Rules
+
+1. Never skip the sync step — even for trivial changes
+2. Never modify a spec without a `CHANGELOG.md` entry
+3. Always design before updating the spec — don't skip the thinking step
+4. Read the active plan before starting any work session
+5. If a task will take more than ~1 hour, break it into subtasks first
+6. Don't rewrite completed tasks — append clarification notes
+7. Specs are permanent system truth — they never get archived; always update in place
+8. Features and plans have lifecycles: backlog → active → done (use file movement to track)
+9. Designs stay in place and get updated during implementation (don't archive)
+10. If validation reveals spec/design errors, update upstream docs BEFORE continuing
+
+---
+
 ## ✅ Implementation Status
 
 **COMPLETE** — All 16 tasks implemented with 55 passing tests and strict TypeScript compilation.
@@ -27,7 +126,7 @@ A single-user MCP server that lets Claude send Markdown content to a Kindle devi
 - Support local (stdio) and remote (HTTP/SSE) MCP transports
 - Containerized, runs on x86_64 and ARM64
 
-See `docs/spec.md` for full requirements. See `docs/design-reviews/send-to-kindle/adr.md` for architecture decisions.
+See `docs/specs/main-spec.md` for full requirements. See `docs/design/main/adr.md` for architecture decisions. See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
 
 ## Architecture
 
@@ -51,7 +150,7 @@ Application Layer  →  Domain Layer  ←  Infrastructure Layer
 - `ToolHandler`: MCP adapter, tool registration, error mapping
 - Transport: stdio (default) + HTTP/SSE (when `MCP_HTTP_PORT` is set)
 
-See `docs/design-reviews/send-to-kindle/adr.md` for full design rationale.
+See `docs/design/main/adr.md` for full design rationale.
 
 ## Project Structure
 

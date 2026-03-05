@@ -1,4 +1,8 @@
-# Feature Idea: Trusted HTTPS Certificate for Remote Access
+# Feature: Trusted HTTPS Certificate for Remote Access
+
+> Status: Backlog
+> Created: 2026-03-05
+> Completed: —
 
 ## Context
 
