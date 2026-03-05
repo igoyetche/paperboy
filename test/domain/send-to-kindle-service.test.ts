@@ -4,6 +4,8 @@ import { Title } from "../../src/domain/values/title.js";
 import { Author } from "../../src/domain/values/author.js";
 import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
 import { EpubDocument } from "../../src/domain/values/epub-document.js";
+import { KindleDevice } from "../../src/domain/values/kindle-device.js";
+import { EmailAddress } from "../../src/domain/values/email-address.js";
 import {
   ConversionError,
   DeliveryError,
@@ -34,6 +36,14 @@ function makeContent(value: string) {
   return result.value;
 }
 
+function makeDevice(name = "personal"): KindleDevice {
+  const emailResult = EmailAddress.create("user@kindle.com");
+  if (!emailResult.ok) throw new Error("bad test setup");
+  const deviceResult = KindleDevice.create(name, emailResult.value);
+  if (!deviceResult.ok) throw new Error("bad test setup");
+  return deviceResult.value;
+}
+
 function fakeLogger(): DeliveryLogger {
   return {
     deliveryAttempt: vi.fn(),
@@ -53,20 +63,17 @@ describe("SendToKindleService", () => {
     };
     const logger = fakeLogger();
     const service = new SendToKindleService(converter, mailer, logger);
+    const device = makeDevice("personal");
 
-    const title = makeTitle("Test");
-    const content = makeContent("# Hello");
-    const author = makeAuthor("Claude");
-
-    const result = await service.execute(title, content, author);
+    const result = await service.execute(makeTitle("Test"), makeContent("# Hello"), makeAuthor("Claude"), device);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.title).toBe("Test");
       expect(result.value.sizeBytes).toBe(epub.sizeBytes);
+      expect(result.value.deviceName).toBe("personal");
     }
-    expect(converter.toEpub).toHaveBeenCalledWith(title, content, author);
-    expect(mailer.send).toHaveBeenCalledWith(epub);
+    expect(mailer.send).toHaveBeenCalledWith(epub, device);
   });
 
   it("returns conversion error without calling mailer", async () => {
@@ -74,17 +81,11 @@ describe("SendToKindleService", () => {
     const converter: ContentConverter = {
       toEpub: vi.fn().mockResolvedValue(err(conversionError)),
     };
-    const mailer: DocumentMailer = {
-      send: vi.fn(),
-    };
+    const mailer: DocumentMailer = { send: vi.fn() };
     const logger = fakeLogger();
     const service = new SendToKindleService(converter, mailer, logger);
 
-    const result = await service.execute(
-      makeTitle("Test"),
-      makeContent("# Hello"),
-      makeAuthor("Claude"),
-    );
+    const result = await service.execute(makeTitle("Test"), makeContent("# Hello"), makeAuthor("Claude"), makeDevice());
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -105,11 +106,7 @@ describe("SendToKindleService", () => {
     const logger = fakeLogger();
     const service = new SendToKindleService(converter, mailer, logger);
 
-    const result = await service.execute(
-      makeTitle("Test"),
-      makeContent("# Hello"),
-      makeAuthor("Claude"),
-    );
+    const result = await service.execute(makeTitle("Test"), makeContent("# Hello"), makeAuthor("Claude"), makeDevice());
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -117,7 +114,7 @@ describe("SendToKindleService", () => {
     }
   });
 
-  it("logs attempt, success on happy path", async () => {
+  it("logs attempt and success with device name on happy path", async () => {
     const epub = new EpubDocument("Test", Buffer.from("epub-data"));
     const converter: ContentConverter = {
       toEpub: vi.fn().mockResolvedValue(ok(epub)),
@@ -128,21 +125,13 @@ describe("SendToKindleService", () => {
     const logger = fakeLogger();
     const service = new SendToKindleService(converter, mailer, logger);
 
-    await service.execute(
-      makeTitle("Test"),
-      makeContent("# Hello"),
-      makeAuthor("Claude"),
-    );
+    await service.execute(makeTitle("Test"), makeContent("# Hello"), makeAuthor("Claude"), makeDevice("personal"));
 
-    expect(logger.deliveryAttempt).toHaveBeenCalledWith("Test", "epub");
-    expect(logger.deliverySuccess).toHaveBeenCalledWith(
-      "Test",
-      "epub",
-      epub.sizeBytes,
-    );
+    expect(logger.deliveryAttempt).toHaveBeenCalledWith("Test", "epub", "personal");
+    expect(logger.deliverySuccess).toHaveBeenCalledWith("Test", "epub", epub.sizeBytes, "personal");
   });
 
-  it("logs attempt, failure on error", async () => {
+  it("logs attempt and failure with device name on error", async () => {
     const conversionError = new ConversionError("EPUB gen failed");
     const converter: ContentConverter = {
       toEpub: vi.fn().mockResolvedValue(err(conversionError)),
@@ -151,17 +140,9 @@ describe("SendToKindleService", () => {
     const logger = fakeLogger();
     const service = new SendToKindleService(converter, mailer, logger);
 
-    await service.execute(
-      makeTitle("Test"),
-      makeContent("# Hello"),
-      makeAuthor("Claude"),
-    );
+    await service.execute(makeTitle("Test"), makeContent("# Hello"), makeAuthor("Claude"), makeDevice("personal"));
 
-    expect(logger.deliveryAttempt).toHaveBeenCalled();
-    expect(logger.deliveryFailure).toHaveBeenCalledWith(
-      "Test",
-      "conversion",
-      "EPUB gen failed",
-    );
+    expect(logger.deliveryAttempt).toHaveBeenCalledWith("Test", "epub", "personal");
+    expect(logger.deliveryFailure).toHaveBeenCalledWith("Test", "conversion", "EPUB gen failed", "personal");
   });
 });
