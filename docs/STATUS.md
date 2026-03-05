@@ -4,9 +4,7 @@
 
 ## Active Work
 
-| Feature | Phase | Specs Affected | Plan | Progress | Status |
-|---------|-------|---|---|---|---|
-| Multiple Kindle Addresses | Design | specs/main-spec.md | — | — | 🔄 In Progress |
+_None_
 
 ## Backlog
 
@@ -22,3 +20,4 @@
 |---------|---|---|---|
 | Send to Kindle MCP Server (MVP) | specs/main-spec.md | 2026-03-05 | plans/done/2026-03-03-send-to-kindle-mcp.md |
 | dotenv Local Fallback | specs/main-spec.md | 2026-03-05 | plans/done/2026-03-04-dotenv-local-fallback.md |
+| Multiple Kindle Addresses | specs/main-spec.md | 2026-03-05 | plans/done/2026-03-05-multiple-kindle-addresses.md |

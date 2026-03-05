@@ -1,8 +1,8 @@
 # Feature: Multiple Kindle Addresses
 
-> Status: Active
+> Status: Done
 > Created: 2026-03-05
-> Completed: —
+> Completed: 2026-03-05
 
 ## Problem
 
@@ -15,15 +15,14 @@ Support a list of named Kindle devices in configuration via `name:email` tuples,
 ### Configuration
 
 ```
-# Single address — backwards compatible (no change required for existing users)
-KINDLE_EMAIL=personal@kindle.com
-
-# Multiple devices — new format takes precedence over KINDLE_EMAIL when set
+# Required: comma-separated name:email pairs (replaces KINDLE_EMAIL — breaking change)
 KINDLE_DEVICES=personal:me@kindle.com,partner:partner@kindle.com,family:family@kindle.com
 
 # Explicit default device (optional — if omitted, first entry is the default)
 KINDLE_DEFAULT_DEVICE=personal
 ```
+
+> **Breaking change:** `KINDLE_EMAIL` is no longer supported. Existing deployments must migrate to `KINDLE_DEVICES=default:your-kindle-address@kindle.com`.
 
 Each entry in `KINDLE_DEVICES` is a `name:email` tuple. Names must be unique. The name is the alias used in the tool parameter and in error messages; the email is never exposed outside the mailer.
 
@@ -72,7 +71,7 @@ send_to_kindle(title: "Article", content: "...")  // sends to default device
 
 ## Changes Required
 
-- **Config**: parse `KINDLE_DEVICES` as `name:email` tuples; fall back to `KINDLE_EMAIL` for single-device users; parse optional `KINDLE_DEFAULT_DEVICE`
+- **Config**: parse `KINDLE_DEVICES` as `name:email` tuples; parse optional `KINDLE_DEFAULT_DEVICE`; `KINDLE_EMAIL` removed (breaking change)
 - **Domain**: introduce `KindleDevice` value object; update `DocumentMailer.send()` to accept `KindleDevice`
 - **Infrastructure**: `SmtpMailer` reads `device.email` internally; alias never logged
 - **ToolHandler**: resolve `device` parameter to a `KindleDevice`; default to configured default device
