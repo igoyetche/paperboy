@@ -9,19 +9,25 @@ export function createPinoLogger(level: string): Logger {
 
 export function createDeliveryLogger(logger: Logger): DeliveryLogger {
   return {
-    deliveryAttempt(title: string, format: string): void {
-      logger.info({ title, format }, "Delivery attempt started");
+    deliveryAttempt(title: string, format: string, deviceName: string): void {
+      logger.info({ title, format, deviceName }, "Delivery attempt started");
     },
-    deliverySuccess(title: string, format: string, sizeBytes: number): void {
-      logger.info({ title, format, sizeBytes }, "Delivery succeeded");
+    deliverySuccess(
+      title: string,
+      format: string,
+      sizeBytes: number,
+      deviceName: string,
+    ): void {
+      logger.info({ title, format, sizeBytes, deviceName }, "Delivery succeeded");
     },
     deliveryFailure(
       title: string,
       errorKind: string,
       errorMessage: string,
+      deviceName: string,
     ): void {
       logger.error(
-        { title, errorKind, errorMessage },
+        { title, errorKind, errorMessage, deviceName },
         "Delivery failed",
       );
     },

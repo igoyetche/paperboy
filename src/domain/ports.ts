@@ -17,7 +17,7 @@ export interface DocumentMailer {
 }
 
 export interface DeliveryLogger {
-  deliveryAttempt(title: string, format: string): void;
-  deliverySuccess(title: string, format: string, sizeBytes: number): void;
-  deliveryFailure(title: string, errorKind: string, message: string): void;
+  deliveryAttempt(title: string, format: string, deviceName: string): void;
+  deliverySuccess(title: string, format: string, sizeBytes: number, deviceName: string): void;
+  deliveryFailure(title: string, errorKind: string, message: string, deviceName: string): void;
 }
