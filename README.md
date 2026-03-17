@@ -1,14 +1,32 @@
-# Send to Kindle MCP Server
+# Paperboy
 
-An MCP server that lets Claude send Markdown content directly to your Kindle. Write or generate content in Claude, invoke the `send_to_kindle` tool, and the document appears in your Kindle library as an EPUB.
+Send Markdown content to your Kindle as an EPUB — from the terminal, from Claude Code, or from any MCP client.
 
 ## How It Works
 
-1. Claude generates Markdown content (summaries, articles, research notes)
-2. Claude calls the `send_to_kindle` MCP tool
-3. The server converts Markdown to EPUB
-4. The EPUB is emailed to your Kindle address
-5. The document appears in your Kindle library
+1. You provide Markdown content (a file, stdin, or via Claude)
+2. Paperboy converts it to EPUB
+3. The EPUB is emailed to your Kindle address
+4. The document appears in your Kindle library
+
+## Two Ways to Use It
+
+### CLI
+
+```bash
+# From a file
+paperboy --title "My Article" --file article.md
+
+# From stdin
+cat article.md | paperboy --title "My Article"
+
+# With options
+paperboy --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
+```
+
+### MCP Server
+
+Connect Claude Desktop or any MCP client to the server. Claude can then send content to your Kindle in a single tool call during conversation.
 
 ## Prerequisites
 
@@ -21,8 +39,9 @@ An MCP server that lets Claude send Markdown content directly to your Kindle. Wr
 
 ```bash
 git clone <repo-url>
-cd send-to-kindle-mcp
+cd send-to-kindle
 npm install
+npm run build
 ```
 
 Copy `.env.example` to `.env` and fill in your values:
@@ -37,12 +56,14 @@ cp .env.example .env
 
 | Variable | Description | Example |
 |---|---|---|
-| `KINDLE_EMAIL` | Your Kindle's receive address | `your-kindle@kindle.com` |
+| `KINDLE_DEVICES` | Named device(s) in `name:email` format | `personal:your-kindle@kindle.com` |
 | `SENDER_EMAIL` | Email that sends the EPUB | `you@gmail.com` |
 | `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
 | `SMTP_PORT` | SMTP server port | `587` |
 | `SMTP_USER` | SMTP login username | `you@gmail.com` |
 | `SMTP_PASS` | SMTP app password | `abcd-efgh-ijkl-mnop` |
+
+Multiple devices: `KINDLE_DEVICES=personal:you@kindle.com,partner:them@kindle.com`
 
 ### Optional Environment Variables
 
@@ -53,11 +74,42 @@ cp .env.example .env
 | `MCP_AUTH_TOKEN` | — | Required when `MCP_HTTP_PORT` is set |
 | `LOG_LEVEL` | `info` | Pino log level (`debug`, `info`, `warn`, `error`) |
 
-## Usage
+## CLI Usage
+
+### Flags
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--title <title>` | Yes | Title of the document sent to Kindle |
+| `--file <path>` | No | Path to a Markdown file; reads from stdin if omitted |
+| `--author <name>` | No | Author name embedded in the EPUB (default: configured value) |
+| `--device <name>` | No | Target Kindle device name (default: first configured device) |
+| `--help` | No | Show usage text and exit |
+| `--version` | No | Show version number and exit |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Document sent successfully |
+| 1 | Validation error (missing title, empty content, size limit) |
+| 2 | EPUB conversion error |
+| 3 | Email delivery error (SMTP auth, connection, rejection) |
+| 4 | Configuration error (missing or invalid environment variables) |
+
+### Configuration Resolution
+
+The CLI loads configuration in this order (first match wins):
+
+1. Shell environment variables
+2. `.env` file in the current working directory
+3. `~/.paperboy/.env` fallback for global user configuration
+
+`--help` and `--version` work without any configuration.
+
+## MCP Server Usage
 
 ### Local (stdio transport)
-
-Run the server and connect Claude Desktop or another MCP client via stdio:
 
 ```bash
 npm run dev
@@ -68,12 +120,12 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "send-to-kindle": {
+    "paperboy": {
       "command": "node",
       "args": ["dist/index.js"],
-      "cwd": "/path/to/send-to-kindle-mcp",
+      "cwd": "/path/to/send-to-kindle",
       "env": {
-        "KINDLE_EMAIL": "your-kindle@kindle.com",
+        "KINDLE_DEVICES": "personal:your-kindle@kindle.com",
         "SENDER_EMAIL": "you@gmail.com",
         "SMTP_HOST": "smtp.gmail.com",
         "SMTP_PORT": "587",
@@ -95,17 +147,26 @@ MCP_HTTP_PORT=3000 MCP_AUTH_TOKEN=your-secret npm run dev
 
 The server accepts MCP requests at `POST /mcp` with Bearer token authentication.
 
+### MCP Tool: `send_to_kindle`
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `title` | string | yes | Document title (appears in Kindle library) |
+| `content` | string | yes | Document body in Markdown format |
+| `author` | string | no | Author name (defaults to `DEFAULT_AUTHOR`) |
+| `device` | string | no | Target Kindle device name |
+
 ### Docker
 
 ```bash
 # Build
-docker build -t send-to-kindle-mcp .
+docker build -t paperboy .
 
 # Run with stdio
-docker run -i --env-file .env send-to-kindle-mcp
+docker run -i --env-file .env paperboy
 
 # Run with HTTP/SSE
-docker run -p 3000:3000 --env-file .env send-to-kindle-mcp
+docker run -p 3000:3000 --env-file .env paperboy
 ```
 
 Or with Docker Compose:
@@ -114,77 +175,66 @@ Or with Docker Compose:
 docker compose up
 ```
 
-## MCP Tool
+## Claude Code Skill
 
-The server exposes a single tool:
+Paperboy ships with a skill file that teaches Claude Code how to send content to Kindle. To use it:
 
-### `send_to_kindle`
+1. Copy `examples/claude-skill/SKILL.md` into your project's `.claude/skills/paperboy/` directory:
 
-Convert Markdown content to EPUB and send it to a Kindle device via email.
+   ```bash
+   mkdir -p .claude/skills/paperboy
+   cp /path/to/send-to-kindle/examples/claude-skill/SKILL.md .claude/skills/paperboy/SKILL.md
+   ```
 
-**Parameters:**
+2. Make sure `paperboy` is installed globally or available via `npx`:
 
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `title` | string | yes | Document title (appears in Kindle library) |
-| `content` | string | yes | Document body in Markdown format |
-| `author` | string | no | Author name (defaults to `DEFAULT_AUTHOR`) |
+   ```bash
+   npm install -g /path/to/send-to-kindle
+   ```
 
-**Success response:**
+3. Create a `.env` file with your configuration (in your project directory or at `~/.paperboy/.env`).
 
-```json
-{
-  "success": true,
-  "message": "Document 'My Article' sent to Kindle successfully.",
-  "sizeBytes": 24576
-}
-```
+Now Claude Code can send content to your Kindle when you ask. For example:
 
-**Error response:**
+> "Send this README to my Kindle"
+> "Summarize this file and send it to my Kindle"
 
-```json
-{
-  "success": false,
-  "error": "VALIDATION_ERROR",
-  "details": "Title cannot be empty"
-}
-```
-
-Error codes: `VALIDATION_ERROR`, `SIZE_ERROR`, `CONVERSION_ERROR`, `SMTP_ERROR`.
+Claude will write the content to a temp file and invoke `paperboy` automatically.
 
 ## Development
 
 ```bash
-npm run dev          # Run with tsx (no build step)
+npm run dev          # Run MCP server with tsx (no build step)
+npm run cli -- --help  # Run CLI with tsx
 npm run build        # Compile TypeScript to dist/
-npm test             # Run automated tests
+npm test             # Run automated tests (149 tests)
 npm run test:watch   # Run tests in watch mode
 npm run test:email   # Send a real test email to verify SMTP config
 ```
 
-### Gmail Setup (Recommended)
+### Gmail Setup
 
 Any SMTP provider works. Gmail is recommended for personal use — it's free, requires no domain, and has no sending restrictions for individual use.
 
 Gmail requires an **App Password** — your regular password will not work for SMTP.
 
-1. Enable 2-Step Verification: Google Account → Security → 2-Step Verification
-2. Create an App Password: Google Account → Security → App Passwords
+1. Enable 2-Step Verification: Google Account > Security > 2-Step Verification
+2. Create an App Password: Google Account > Security > App Passwords
 3. Use the generated 16-character password as `SMTP_PASS` in `.env`
 
-Then add your sender address to Amazon's approved list: Amazon Account → Manage Your Content and Devices → Preferences → Personal Document Settings → Approved Personal Document E-mail List.
+Then add your sender address to Amazon's approved list: Amazon Account > Manage Your Content and Devices > Preferences > Personal Document Settings > Approved Personal Document E-mail List.
 
 ## Architecture
 
 Three-layer design with strict dependency inversion:
 
 ```
-Application (MCP adapter) → Domain (service, values, ports) ← Infrastructure (EPUB, SMTP)
+Application (MCP + CLI adapters) --> Domain (service, values, ports) <-- Infrastructure (EPUB, SMTP)
 ```
 
 - **Domain**: Value objects (`Title`, `Author`, `MarkdownContent`, `EpubDocument`), service orchestration, port interfaces, typed errors with `Result<T, E>`
-- **Infrastructure**: Markdown-to-EPUB conversion (`marked` + `sanitize-html` + `epub-gen-memory`), SMTP delivery (`nodemailer`), Pino logging
-- **Application**: MCP tool registration, error-to-response mapping
+- **Infrastructure**: Markdown-to-EPUB conversion (`marked` + `sanitize-html` + `epub-gen-memory`), SMTP delivery (`nodemailer`), Pino logging, CLI content reader
+- **Application**: MCP tool handler, CLI adapter (arg parsing, exit codes, orchestration), two composition roots (`index.ts` for MCP, `cli-entry.ts` for CLI)
 
 ## License
 
