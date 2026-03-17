@@ -260,11 +260,11 @@ export function formatError(message: string): string {
  */
 export function getUsageText(): string {
   return `
-send-to-kindle — Send Markdown content to your Kindle device
+paperboy — Send Markdown content to your Kindle device
 
 USAGE
-  send-to-kindle --title <title> [--file <path>] [options]
-  echo "# Hello" | send-to-kindle --title <title> [options]
+  paperboy --title <title> [--file <path>] [options]
+  echo "# Hello" | paperboy --title <title> [options]
 
 FLAGS
   --title <title>     (required) Title of the document sent to Kindle
@@ -281,9 +281,9 @@ EXIT CODES
   3   Email delivery error
 
 EXAMPLES
-  send-to-kindle --title "My Article" --file article.md
-  cat article.md | send-to-kindle --title "My Article"
-  send-to-kindle --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
+  paperboy --title "My Article" --file article.md
+  cat article.md | paperboy --title "My Article"
+  paperboy --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
 `.trimStart();
 }
 

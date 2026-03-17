@@ -23,7 +23,29 @@ import { MarkdownEpubConverter } from "./infrastructure/converter/markdown-epub-
 import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { readFromFile, readFromStdin } from "./infrastructure/cli/content-reader.js";
-import { run } from "./application/cli.js";
+import { run, getUsageText } from "./application/cli.js";
+
+interface PackageJson {
+  readonly version: string;
+}
+
+// ---------------------------------------------------------------------------
+// 0. Handle --help and --version before loading config (no env vars needed)
+// ---------------------------------------------------------------------------
+
+const rawArgs = process.argv.slice(2);
+
+if (rawArgs.includes("--help")) {
+  process.stderr.write(getUsageText() + "\n");
+  process.exit(0);
+}
+
+if (rawArgs.includes("--version")) {
+  const pkgUrl = new URL("../package.json", import.meta.url);
+  const pkgJson = JSON.parse(readFileSync(pkgUrl, "utf-8")) as PackageJson;
+  process.stderr.write(pkgJson.version + "\n");
+  process.exit(0);
+}
 
 // ---------------------------------------------------------------------------
 // 1. Load .env files
@@ -52,10 +74,6 @@ if (fallbackResult.error) {
 // 2. Read version from package.json
 //    Use URL + readFileSync so the path resolves correctly regardless of CWD.
 // ---------------------------------------------------------------------------
-
-interface PackageJson {
-  readonly version: string;
-}
 
 const pkgPath = new URL("../package.json", import.meta.url);
 const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as PackageJson;

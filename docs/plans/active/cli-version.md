@@ -278,7 +278,7 @@ npx tsx src/cli-entry.ts --version
 
 ---
 
-## Task 5: Rename package to `paperboy` and wire bin field `[ ]`
+## Task 5: Rename package to `paperboy` and wire bin field `[x]` (2026-03-17)
 
 ### Deliverable: package.json updated with new name, bin field, and cli script
 

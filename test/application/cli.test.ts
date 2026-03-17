@@ -442,7 +442,7 @@ describe("run", () => {
       expect(code).toBe(0);
       const calls = stderr.mock.calls.map((c) => c[0] as string);
       const combined = calls.join("\n");
-      expect(combined).toContain("send-to-kindle");
+      expect(combined).toContain("paperboy");
       expect(combined).toContain("--title");
     });
 

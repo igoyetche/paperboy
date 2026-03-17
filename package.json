@@ -1,11 +1,15 @@
 {
-  "name": "send-to-kindle-mcp",
+  "name": "paperboy",
   "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "paperboy": "./dist/cli-entry.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
+    "cli": "tsx src/cli-entry.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:email": "tsx scripts/test-email.ts"
