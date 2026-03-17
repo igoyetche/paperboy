@@ -220,7 +220,7 @@ npx tsc --noEmit
 
 ---
 
-## Task 4: Add CLI composition root and dotenv fallback `[ ]`
+## Task 4: Add CLI composition root and dotenv fallback `[x]` (2026-03-17)
 
 ### Deliverable: `src/cli-entry.ts` — the shell that wires dependencies and calls `run`, with dual .env loading and silent pino
 
