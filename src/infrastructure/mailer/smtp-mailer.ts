@@ -80,7 +80,7 @@ export class SmtpMailer implements DocumentMailer {
         from: this.config.sender.email,
         to: device.email.value,
         subject: document.title,
-        text: "Sent via Send to Kindle MCP Server.",
+        text: "Sent via Paperboy.",
         attachments: [
           {
             filename,

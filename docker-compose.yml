@@ -1,5 +1,5 @@
 services:
-  send-to-kindle:
+  paperboy:
     build: .
     env_file: .env
     stdin_open: true

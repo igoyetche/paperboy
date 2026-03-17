@@ -43,7 +43,7 @@ function registerTools(s: McpServer, handler: ToolHandler): void {
 }
 
 const server = new McpServer({
-  name: "send-to-kindle",
+  name: "paperboy",
   version: "1.0.0",
 });
 
@@ -53,7 +53,7 @@ registerTools(server, toolHandler);
 const stdioTransport = new StdioServerTransport();
 await server.connect(stdioTransport);
 
-pinoLogger.info("Send to Kindle MCP server started (stdio)");
+pinoLogger.info("Paperboy MCP server started (stdio)");
 
 // HTTP/SSE transport (if configured)
 if (config.http) {
@@ -81,7 +81,7 @@ if (config.http) {
       sessionIdGenerator: undefined,
     });
     const httpServer = new McpServer({
-      name: "send-to-kindle",
+      name: "paperboy",
       version: "1.0.0",
     });
 
@@ -97,7 +97,7 @@ if (config.http) {
   app.listen(httpConfig.port, () => {
     pinoLogger.info(
       { port: httpConfig.port, url: `http://localhost:${httpConfig.port}/mcp` },
-      "Send to Kindle MCP server started (HTTP)",
+      "Paperboy MCP server started (HTTP)",
     );
   });
 }
