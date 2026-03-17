@@ -1,17 +1,18 @@
 # Project Status Dashboard
 
-> Last updated: 2026-03-05
+> Last updated: 2026-03-17
 
 ## Active Work
 
-_None_
+| Feature | Phase | Specs Affected | Plan | Priority |
+|---------|-------|---|---|---|
+| CLI Version + Claude Code Skill | 🔄 In Progress | specs/main-spec.md | plans/active/cli-version.md | High |
 
 ## Backlog
 
 | Feature | Phase | Specs Affected | Plan | Priority |
 |---------|-------|---|---|---|
 | URL to Kindle | Design | specs/main-spec.md | — | High |
-| CLI Version + Claude Code Skill | Design | specs/main-spec.md | — | High |
 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 
 ## Completed
