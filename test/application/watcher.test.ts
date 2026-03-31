@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { processFile } from "../../src/application/watcher.js";
-import type { WatcherDeps } from "../../src/application/watcher.js";
+import { processFile, startWatcher } from "../../src/application/watcher.js";
+import type { WatcherDeps, StartWatcherDeps } from "../../src/application/watcher.js";
 import {
   ConversionError,
   DeliveryError,
@@ -350,6 +350,154 @@ describe("processFile", () => {
       const [titleArg] = (deps.service.execute as ReturnType<typeof vi.fn>).mock.calls[0] as [{ value: string }, ...unknown[]];
       expect(titleArg.value).toBe("my-report");
       expect(deps.moveToSent).toHaveBeenCalledWith("/inbox/my-report.md");
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// startWatcher tests
+// ---------------------------------------------------------------------------
+
+function makeStartWatcherDeps(overrides: Partial<StartWatcherDeps> = {}): StartWatcherDeps {
+  const base = makeDeps(overrides);
+  const onFileCallbacks: Array<(path: string) => void> = [];
+
+  return {
+    ...base,
+    listFiles: vi.fn().mockResolvedValue([]),
+    createWatcher: vi.fn().mockImplementation(({ onFile }: { inboxPath: string; onFile: (path: string) => void }) => {
+      onFileCallbacks.push(onFile);
+      return { close: vi.fn().mockResolvedValue(undefined) };
+    }),
+    ...overrides,
+  };
+}
+
+describe("startWatcher", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // -------------------------------------------------------------------------
+  // 1. Processes existing files on startup
+  // -------------------------------------------------------------------------
+
+  describe("existing files on startup", () => {
+    it("processes all existing .md files found in the watch folder", async () => {
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockResolvedValue(["/watch/a.md", "/watch/b.md"]),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+      await handle.shutdown();
+
+      expect(deps.listFiles).toHaveBeenCalledWith("/watch", ".md");
+      expect(deps.service.execute).toHaveBeenCalledTimes(2);
+      expect(deps.moveToSent).toHaveBeenCalledWith("/watch/a.md");
+      expect(deps.moveToSent).toHaveBeenCalledWith("/watch/b.md");
+    });
+
+    it("handles empty watch folder without error", async () => {
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockResolvedValue([]),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+      await handle.shutdown();
+
+      expect(deps.service.execute).not.toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. Skips already-sent file when moveToSent fails
+  // -------------------------------------------------------------------------
+
+  describe("move failure deduplication", () => {
+    it("marks file as sent in-memory and skips it on re-enqueue when moveToSent throws", async () => {
+      let moveCallCount = 0;
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockResolvedValue(["/watch/article.md"]),
+        moveToSent: vi.fn().mockImplementation(() => {
+          moveCallCount++;
+          throw new Error("EXDEV: cross-device link not permitted");
+        }),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+
+      // moveToSent threw — file should be in sentPaths, warn logged
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Sent but could not move article.md"),
+      );
+      expect(moveCallCount).toBe(1);
+
+      await handle.shutdown();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. Clean shutdown
+  // -------------------------------------------------------------------------
+
+  describe("graceful shutdown", () => {
+    it("closes the watcher on shutdown", async () => {
+      const closeFn = vi.fn().mockResolvedValue(undefined);
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockResolvedValue([]),
+        createWatcher: vi.fn().mockReturnValue({ close: closeFn }),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+      await handle.shutdown();
+
+      expect(closeFn).toHaveBeenCalledTimes(1);
+    });
+
+    it("waits for in-flight processing before closing watcher", async () => {
+      const order: string[] = [];
+      let resolveMove!: () => void;
+      const moveDone = new Promise<void>((res) => { resolveMove = res; });
+
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockResolvedValue(["/watch/slow.md"]),
+        moveToSent: vi.fn().mockImplementation(async () => {
+          await moveDone;
+          order.push("moved");
+          return "/watch/sent/slow.md";
+        }),
+        createWatcher: vi.fn().mockReturnValue({
+          close: vi.fn().mockImplementation(() => {
+            order.push("closed");
+          }),
+        }),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+
+      const shutdownPromise = handle.shutdown();
+
+      // Resolve the in-flight move after shutdown is requested
+      resolveMove();
+      await vi.runAllTimersAsync();
+      await shutdownPromise;
+
+      // moved should come before closed
+      expect(order.indexOf("moved")).toBeLessThan(order.indexOf("closed"));
     });
   });
 });

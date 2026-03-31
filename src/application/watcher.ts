@@ -144,3 +144,90 @@ export async function processFile(
     lastError?.message ?? "Unknown error",
   );
 }
+
+/**
+ * Dependencies for startWatcher, extending WatcherDeps with filesystem and watcher factory.
+ * Implements FR-009: watch folder startup with existing file processing and graceful shutdown.
+ */
+export interface StartWatcherDeps extends WatcherDeps {
+  listFiles: (dir: string, ext: string) => Promise<string[]>;
+  createWatcher: (opts: { inboxPath: string; onFile: (path: string) => void }) => { close: () => Promise<void> };
+}
+
+/**
+ * Handle returned by startWatcher for lifecycle management.
+ * Implements FR-009: graceful shutdown waits for in-flight processing to complete.
+ */
+export interface WatcherHandle {
+  shutdown: () => Promise<void>;
+}
+
+/**
+ * Starts the watch folder orchestrator: processes existing files then watches for new ones.
+ *
+ * Implements FR-009:
+ * - Deduplicates files using sentPaths set
+ * - Queues files for serial processing
+ * - Tolerates moveToSent failures by marking file as sent in-memory
+ * - Graceful shutdown: drains queue and closes watcher
+ */
+export async function startWatcher(deps: StartWatcherDeps): Promise<WatcherHandle> {
+  const sentPaths = new Set<string>();
+  let processing = false;
+  let shutdownRequested = false;
+  const queue: string[] = [];
+
+  const wrappedDeps: WatcherDeps = {
+    ...deps,
+    moveToSent: async (filePath: string) => {
+      try {
+        return await deps.moveToSent(filePath);
+      } catch (e: unknown) {
+        sentPaths.add(filePath);
+        const msg = e instanceof Error ? e.message : "unknown";
+        deps.logger.warn(`Sent but could not move ${basename(filePath)}: ${msg}`);
+        return filePath;
+      }
+    },
+  };
+
+  async function processNext(): Promise<void> {
+    while (queue.length > 0 && !shutdownRequested) {
+      const next = queue.shift();
+      if (next === undefined) break;
+      if (sentPaths.has(next)) {
+        deps.logger.warn(`Skipping already-sent file: ${basename(next)}`);
+        continue;
+      }
+      processing = true;
+      await processFile(next, wrappedDeps);
+      processing = false;
+    }
+  }
+
+  function enqueue(filePath: string): void {
+    if (sentPaths.has(filePath)) return;
+    queue.push(filePath);
+    void processNext();
+  }
+
+  const watcher = deps.createWatcher({
+    inboxPath: deps.watchFolder,
+    onFile: enqueue,
+  });
+
+  const existing = await deps.listFiles(deps.watchFolder, ".md");
+  for (const file of existing) {
+    enqueue(file);
+  }
+
+  return {
+    shutdown: async () => {
+      shutdownRequested = true;
+      while (processing) {
+        await delay(100);
+      }
+      await watcher.close();
+    },
+  };
+}
