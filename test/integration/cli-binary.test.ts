@@ -78,6 +78,13 @@ describe("CLI binary integration", () => {
     expect(stderr).toContain("WATCH_FOLDER");
   });
 
+  it("exits 4 when watch is run without configuration", async () => {
+    const { exitCode, stderr } = await runCli(["watch"]);
+
+    expect(exitCode).toBe(4);
+    expect(stderr).toContain("Configuration error");
+  });
+
   it("exits 4 with config error when no env vars are set", async () => {
     const { exitCode, stderr } = await runCli([
       "--title",

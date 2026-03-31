@@ -3,12 +3,14 @@
   Paperboy Watcher — Windows Task Scheduler config
 
   HOW TO USE:
-  1. Replace C:\path\to\node.exe with your Node.js path (run: where node)
-  2. Replace C:\path\to\watch-entry.js with the full path to dist/watch-entry.js
-  3. Import: schtasks /create /tn "PaperboyWatcher" /xml "path\to\this\file.xml"
+  1. Replace C:\path\to\npx.cmd with your npx path (run: where npx)
+  2. Import: schtasks /create /tn "PaperboyWatcher" /xml "path\to\this\file.xml"
 
-  Or use the one-liner (replace paths):
-    schtasks /create /tn "PaperboyWatcher" /tr "\"C:\path\to\node.exe\" \"C:\path\to\watch-entry.js\"" /sc onlogon /rl limited
+  Or use the one-liner:
+    schtasks /create /tn "PaperboyWatcher" /tr "\"C:\path\to\npx.cmd\" paperboy watch" /sc onlogon /rl limited
+
+  If installed globally (npm install -g paperboy):
+    schtasks /create /tn "PaperboyWatcher" /tr "\"C:\path\to\paperboy.cmd\" watch" /sc onlogon /rl limited
 -->
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <Triggers>
@@ -28,8 +30,8 @@
   </Settings>
   <Actions>
     <Exec>
-      <Command>C:\path\to\node.exe</Command>
-      <Arguments>C:\path\to\watch-entry.js</Arguments>
+      <Command>C:\path\to\npx.cmd</Command>
+      <Arguments>paperboy watch</Arguments>
     </Exec>
   </Actions>
 </Task>

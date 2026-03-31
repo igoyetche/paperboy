@@ -12,8 +12,6 @@
  * Follows the same dotenv loading pattern as cli-entry.ts (ADR #11).
  */
 
-import dotenv from "dotenv";
-import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { readFile, rename, writeFile, mkdir, stat, readdir } from "node:fs/promises";
 import { watch } from "chokidar";
@@ -27,6 +25,7 @@ import { createFileMover } from "./infrastructure/watcher/file-mover.js";
 import { createFolderWatcher } from "./infrastructure/watcher/folder-watcher.js";
 import { startWatcher } from "./application/watcher.js";
 import type { WatcherLogger } from "./application/watcher.js";
+import { loadDotenv } from "./infrastructure/dotenv-loader.js";
 
 // ---------------------------------------------------------------------------
 // 0. Handle --help before loading config (no env vars needed)
@@ -61,29 +60,10 @@ if (rawArgs.includes("--help")) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Load .env files
-//    CWD/.env is loaded first (dotenv default behaviour).
-//    ~/.paperboy/.env is loaded as a fallback — values already set by the
-//    first call are NOT overwritten (dotenv never overwrites existing vars).
+// 1. Load .env files (shared logic with cli-entry.ts)
 // ---------------------------------------------------------------------------
 
-dotenv.config(); // CWD/.env — silently skips if absent
-
-const fallbackPath = join(homedir(), ".paperboy", ".env");
-const fallbackResult = dotenv.config({ path: fallbackPath });
-
-// Warn only when the file exists but could not be parsed.
-// ENOENT means the file simply isn't there — that is expected and silent.
-if (fallbackResult.error) {
-  const code: unknown = "code" in fallbackResult.error
-    ? fallbackResult.error["code"]
-    : undefined;
-  if (code !== "ENOENT") {
-    process.stderr.write(
-      `Warning: could not parse ${fallbackPath}: ${fallbackResult.error.message}\n`,
-    );
-  }
-}
+loadDotenv((msg) => process.stderr.write(msg + "\n"));
 
 // ---------------------------------------------------------------------------
 // 2. Load config (fail-fast), validate watch folder, wire deps, start watcher
@@ -155,8 +135,10 @@ try {
     moveToError: (fp, k, m) => fileMover.moveToError(fp, k, m),
     logger,
     listFiles: async (dir, ext) => {
-      const entries = await readdir(dir);
-      return entries.filter((e) => e.endsWith(ext)).map((e) => join(dir, e));
+      const entries = await readdir(dir, { withFileTypes: true });
+      return entries
+        .filter((e) => e.isFile() && e.name.endsWith(ext))
+        .map((e) => join(dir, e.name));
     },
     createWatcher: (opts) => createFolderWatcher({
       inboxPath: opts.inboxPath,

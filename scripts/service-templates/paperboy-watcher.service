@@ -1,9 +1,9 @@
 # Paperboy Watcher — systemd user unit
 #
 # HOW TO USE:
-# 1. Replace /path/to/node with your Node.js path (run: which node)
-# 2. Replace /path/to/watch-entry.js with the full path to dist/watch-entry.js
-# 3. Copy and enable:
+# 1. Replace /path/to/npx with your npx path (run: which npx)
+#    Or if installed globally, use: /path/to/paperboy watch
+# 2. Copy and enable:
 #    cp paperboy-watcher.service ~/.config/systemd/user/
 #    systemctl --user enable --now paperboy-watcher
 #
@@ -19,7 +19,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/path/to/node /path/to/watch-entry.js
+ExecStart=/path/to/npx paperboy watch
 Restart=on-failure
 RestartSec=10
 

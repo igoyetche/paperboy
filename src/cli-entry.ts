@@ -13,9 +13,6 @@
  * ADR #11: dotenv fallback warns on parse errors but not on ENOENT
  */
 
-import dotenv from "dotenv";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { loadConfig } from "./infrastructure/config.js";
 import { createPinoLogger, createDeliveryLogger } from "./infrastructure/logger.js";
@@ -24,6 +21,7 @@ import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { readFromFile, readFromStdin } from "./infrastructure/cli/content-reader.js";
 import { run, getUsageText } from "./application/cli.js";
+import { loadDotenv } from "./infrastructure/dotenv-loader.js";
 
 interface PackageJson {
   readonly version: string;
@@ -61,27 +59,10 @@ if (rawArgs.includes("--version")) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Load .env files
-//    CWD/.env is loaded first (dotenv default behaviour).
-//    ~/.paperboy/.env is loaded as a fallback — values already set by the
-//    first call are NOT overwritten (dotenv never overwrites existing vars).
+// 1. Load .env files (shared logic with watch-entry.ts)
 // ---------------------------------------------------------------------------
 
-dotenv.config(); // CWD/.env — silently skips if absent
-
-const fallbackPath = join(homedir(), ".paperboy", ".env");
-const fallbackResult = dotenv.config({ path: fallbackPath });
-
-// Warn only when the file exists but could not be parsed.
-// ENOENT means the file simply isn't there — that is expected and silent.
-if (fallbackResult.error) {
-  const nodeError = fallbackResult.error as NodeJS.ErrnoException;
-  if (nodeError.code !== "ENOENT") {
-    process.stderr.write(
-      `Warning: could not parse ${fallbackPath}: ${fallbackResult.error.message}\n`,
-    );
-  }
-}
+loadDotenv((msg) => process.stderr.write(msg + "\n"));
 
 // ---------------------------------------------------------------------------
 // 2. Read version from package.json

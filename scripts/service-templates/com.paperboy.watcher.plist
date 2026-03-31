@@ -4,9 +4,9 @@
   Paperboy Watcher — macOS launchd config
 
   HOW TO USE:
-  1. Replace /path/to/node with your Node.js path (run: which node)
-  2. Replace /path/to/watch-entry.js with the full path to dist/watch-entry.js
-  3. Copy to ~/Library/LaunchAgents/ and load:
+  1. Replace /path/to/npx with your npx path (run: which npx)
+     Or if installed globally, use the paperboy binary path (run: which paperboy)
+  2. Copy to ~/Library/LaunchAgents/ and load:
      cp com.paperboy.watcher.plist ~/Library/LaunchAgents/
      launchctl load ~/Library/LaunchAgents/com.paperboy.watcher.plist
 
@@ -20,8 +20,9 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/path/to/node</string>
-    <string>/path/to/watch-entry.js</string>
+    <string>/path/to/npx</string>
+    <string>paperboy</string>
+    <string>watch</string>
   </array>
 
   <key>RunAtLoad</key>
