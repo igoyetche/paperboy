@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { writeFile, unlink, mkdir } from "node:fs/promises";
+import { writeFile, unlink } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

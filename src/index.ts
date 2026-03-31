@@ -22,21 +22,24 @@ const service = new SendToKindleService(converter, mailer, deliveryLogger);
 const toolHandler = new ToolHandler(service, config.defaultAuthor, config.devices);
 
 function registerTools(s: McpServer, handler: ToolHandler): void {
-  s.tool(
+  s.registerTool(
     "send_to_kindle",
-    "Convert Markdown content to EPUB and send it to a Kindle device via email. " +
-      "Accepts a title, markdown content, and optional author name.",
     {
-      title: z.string().describe("Document title that will appear in the Kindle library"),
-      content: z.string().describe("Document content in Markdown format"),
-      author: z
-        .string()
-        .optional()
-        .describe("Author name for document metadata (defaults to configured value)"),
-      device: z
-        .string()
-        .optional()
-        .describe("Name of the Kindle device to send to. Omit to use the default device."),
+      description:
+        "Convert Markdown content to EPUB and send it to a Kindle device via email. " +
+        "Accepts a title, markdown content, and optional author name.",
+      inputSchema: {
+        title: z.string().describe("Document title that will appear in the Kindle library"),
+        content: z.string().describe("Document content in Markdown format"),
+        author: z
+          .string()
+          .optional()
+          .describe("Author name for document metadata (defaults to configured value)"),
+        device: z
+          .string()
+          .optional()
+          .describe("Name of the Kindle device to send to. Omit to use the default device."),
+      },
     },
     async (args) => handler.handle(args),
   );

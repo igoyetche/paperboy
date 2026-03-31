@@ -17,7 +17,14 @@ async function runCli(
 ): Promise<{ exitCode: number; stderr: string }> {
   try {
     const result = await execFileAsync(NODE_PATH, [CLI_PATH, ...args], {
-      env: { PATH: process.env["PATH"] ?? "" },
+      // Provide a minimal environment with no SMTP/Kindle config.
+      // USERPROFILE and HOME are set to a nonexistent path so that
+      // ~/.paperboy/.env fallback is not found, ensuring config fails.
+      env: {
+        PATH: process.env["PATH"] ?? "",
+        USERPROFILE: "C:\\nonexistent\\isolated-test-home",
+        HOME: "/nonexistent/isolated-test-home",
+      },
       timeout: 10_000,
     });
     return { exitCode: 0, stderr: result.stderr };
