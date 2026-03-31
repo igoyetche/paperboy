@@ -192,6 +192,7 @@ export async function startWatcher(deps: StartWatcherDeps): Promise<WatcherHandl
   };
 
   async function processNext(): Promise<void> {
+    if (processing) return;
     while (queue.length > 0 && !shutdownRequested) {
       const next = queue.shift();
       if (next === undefined) break;
