@@ -35,6 +35,19 @@ interface PackageJson {
 
 const rawArgs = process.argv.slice(2);
 
+// ---------------------------------------------------------------------------
+// 0a. Subcommand routing: "watch" delegates to watch-entry module
+// ---------------------------------------------------------------------------
+
+if (rawArgs[0] === "watch") {
+  // Replace process.argv so watch-entry sees only the args after "watch"
+  const [node, script] = process.argv;
+  process.argv = [node ?? "node", script ?? "paperboy", ...rawArgs.slice(1)];
+  await import("./watch-entry.js");
+  // watch-entry calls process.exit() in all code paths
+  process.exit(0);
+}
+
 if (rawArgs.includes("--help")) {
   process.stderr.write(getUsageText() + "\n");
   process.exit(0);

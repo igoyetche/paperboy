@@ -67,6 +67,14 @@ describe("CLI binary integration", () => {
     expect(stderr).toMatch(/^\d+\.\d+\.\d+/);
   });
 
+  it("delegates watch --help and exits 0", async () => {
+    const { exitCode, stderr } = await runCli(["watch", "--help"]);
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain("paperboy watch");
+    expect(stderr).toContain("WATCH_FOLDER");
+  });
+
   it("exits 4 with config error when no env vars are set", async () => {
     const { exitCode, stderr } = await runCli([
       "--title",
