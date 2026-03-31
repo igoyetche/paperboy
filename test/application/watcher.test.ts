@@ -447,7 +447,30 @@ describe("startWatcher", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 3. Clean shutdown
+  // 3. moveToError failure does not crash the queue
+  // -------------------------------------------------------------------------
+
+  describe("moveToError failure resilience", () => {
+    it("logs a warning and continues processing when moveToError throws", async () => {
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockResolvedValue(["/watch/bad.md"]),
+        readFile: vi.fn().mockResolvedValue(""),
+        moveToError: vi.fn().mockRejectedValue(new Error("EPERM: permission denied")),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+      await handle.shutdown();
+
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Could not move bad.md to error/"),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. Clean shutdown
   // -------------------------------------------------------------------------
 
   describe("graceful shutdown", () => {

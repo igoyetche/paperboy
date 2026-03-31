@@ -16,7 +16,6 @@ import dotenv from "dotenv";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { readFile, rename, writeFile, mkdir, stat, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { watch } from "chokidar";
 import { loadConfig } from "./infrastructure/config.js";
 import { createPinoLogger, createDeliveryLogger } from "./infrastructure/logger.js";
@@ -76,8 +75,10 @@ const fallbackResult = dotenv.config({ path: fallbackPath });
 // Warn only when the file exists but could not be parsed.
 // ENOENT means the file simply isn't there — that is expected and silent.
 if (fallbackResult.error) {
-  const nodeError = fallbackResult.error as NodeJS.ErrnoException;
-  if (nodeError.code !== "ENOENT") {
+  const code: unknown = "code" in fallbackResult.error
+    ? fallbackResult.error["code"]
+    : undefined;
+  if (code !== "ENOENT") {
     process.stderr.write(
       `Warning: could not parse ${fallbackPath}: ${fallbackResult.error.message}\n`,
     );
@@ -102,7 +103,9 @@ try {
   const watchFolder = resolve(config.watchFolder);
 
   // Validate watch folder exists on disk
-  if (!existsSync(watchFolder)) {
+  try {
+    await stat(watchFolder);
+  } catch {
     process.stderr.write(
       `Configuration error: WATCH_FOLDER does not exist: ${watchFolder}\n`,
     );

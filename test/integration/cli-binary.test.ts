@@ -29,14 +29,17 @@ async function runCli(
     });
     return { exitCode: 0, stderr: result.stderr };
   } catch (error: unknown) {
-    const execError = error as {
-      code?: number;
-      stderr?: string;
-    };
-    return {
-      exitCode: execError.code ?? 1,
-      stderr: execError.stderr ?? "",
-    };
+    if (error === null || typeof error !== "object") {
+      return { exitCode: 1, stderr: "" };
+    }
+    const obj = error;
+    const exitCode = "code" in obj && typeof obj["code"] === "number"
+      ? obj["code"]
+      : 1;
+    const stderr = "stderr" in obj && typeof obj["stderr"] === "string"
+      ? obj["stderr"]
+      : "";
+    return { exitCode, stderr };
   }
 }
 

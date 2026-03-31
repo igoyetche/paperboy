@@ -189,6 +189,15 @@ export async function startWatcher(deps: StartWatcherDeps): Promise<WatcherHandl
         return filePath;
       }
     },
+    moveToError: async (filePath: string, errorKind: string, errorMessage: string) => {
+      try {
+        return await deps.moveToError(filePath, errorKind, errorMessage);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "unknown";
+        deps.logger.warn(`Could not move ${basename(filePath)} to error/: ${msg}`);
+        return filePath;
+      }
+    },
   };
 
   async function processNext(): Promise<void> {
