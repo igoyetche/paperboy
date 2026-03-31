@@ -12,7 +12,7 @@ A single-user tool that sends Markdown content to a Kindle device in one step—
 
 | Location | Contains | Lifecycle |
 |---|---|---|
-| `docs/features/{backlog,active,done}/` | Change requests — what and why | Created → Active → Done |
+| `docs/features/{backlog,active,done}/` | Change requests — what and why (no technical details) | Created → Active → Done |
 | `docs/designs/` | Technical design — how it will work | Created with feature, updated during implementation |
 | `docs/specs/` | System truth — how things work NOW | Permanent, updated in place |
 | `docs/plans/{backlog,active,done}/` | Task breakdowns — steps to build it | Created → Active → Done |
@@ -25,7 +25,7 @@ A single-user tool that sends Markdown content to a Kindle device in one step—
 Feature → Design → Spec → Plan → Implement → Test → Validate → Sync
 ```
 
-1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, acceptance criteria. Assign the next sequential ticket code (`PB-NNN`) in the feature header. Check `docs/STATUS.md` for the last used code.
+1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, and acceptance criteria. Assign the next sequential ticket code (`PB-NNN`) in the feature header. Check `docs/STATUS.md` for the last used code. **No technical details** — no dependencies, no layer changes, no pipelines, no implementation specifics. Those belong in the design.
 2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs
 3. **SPEC** — Update affected specs in `docs/specs/` based on approved design; log changes in `docs/CHANGELOG.md`
 4. **PLAN** — Create plan in `docs/plans/backlog/[name].md` with tasks referencing spec requirements; add row to `docs/STATUS.md`
@@ -110,7 +110,6 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 - ✅ Application layer: MCP tool handler, CLI adapter, composition roots (MCP + CLI)
 - ✅ Deployment: multi-stage Dockerfile, docker-compose.yml
 - ✅ CLI: `paperboy` command with arg parsing, exit codes, dual dotenv loading
-- ✅ Claude Code skill: `examples/claude-skill/SKILL.md`
 - ✅ Testing: 149 tests across 17 test files, 100% passing
 - ✅ TypeScript: strict mode, no `any`, no assertions
 
@@ -122,7 +121,7 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 
 **Two distribution paths:**
 1. **MCP Server** — Claude invokes `send_to_kindle` tool via MCP protocol (stdio or HTTP/SSE)
-2. **CLI** — `paperboy --title "Title" --file notes.md` from the terminal or via Claude Code skill
+2. **CLI** — `paperboy --title "Title" --file notes.md` from the terminal
 
 **Core workflow:** Content (Markdown) → EPUB conversion → email delivery → document appears in Kindle library.
 
@@ -741,7 +740,6 @@ npm run test:watch   # Watch mode for development
    - npm bin field for `paperboy` CLI command
 
 5. ✅ **Claude Code Integration**
-   - Skill file at `examples/claude-skill/SKILL.md`
 
 ### Key Features
 - **Type Safety:** Strict TypeScript, no `any`, no assertions

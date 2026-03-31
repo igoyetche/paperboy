@@ -175,32 +175,6 @@ Or with Docker Compose:
 docker compose up
 ```
 
-## Claude Code Skill
-
-Paperboy ships with a skill file that teaches Claude Code how to send content to Kindle. To use it:
-
-1. Copy `examples/claude-skill/SKILL.md` into your project's `.claude/skills/paperboy/` directory:
-
-   ```bash
-   mkdir -p .claude/skills/paperboy
-   cp /path/to/send-to-kindle/examples/claude-skill/SKILL.md .claude/skills/paperboy/SKILL.md
-   ```
-
-2. Make sure `paperboy` is installed globally or available via `npx`:
-
-   ```bash
-   npm install -g /path/to/send-to-kindle
-   ```
-
-3. Create a `.env` file with your configuration (in your project directory or at `~/.paperboy/.env`).
-
-Now Claude Code can send content to your Kindle when you ask. For example:
-
-> "Send this README to my Kindle"
-> "Summarize this file and send it to my Kindle"
-
-Claude will write the content to a temp file and invoke `paperboy` automatically.
-
 ## Development
 
 ```bash

@@ -4,6 +4,33 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-03-31 — Remove Claude Code Skill approach
+
+### ADR
+- **docs/designs/remove-claude-skill/adr.md**: Documents the decision to remove the skill distribution path. Skills lack discoverability, require manual installation, have no standard distribution mechanism, and the interaction model (Claude silently shelling out) lacks transparency. See ADR for full rationale.
+
+### Removed
+- **Claude Code skill removed**: Dropped the `examples/claude-skill/SKILL.md` skill file and install script. The skill-based UX was not a good experience. Paperboy is now available only as MCP server and CLI.
+
+### Spec Changes
+- **specs/main-spec.md — Section 8**: Removed "Claude Code Skill" subsection. CLI section updated to remove skill references.
+
+---
+
+## 2026-03-31 — PB-005 URL to Kindle dropped
+
+### Cancelled
+- **PB-005 cancelled**: URL-to-Kindle will be approached differently. Original design was skill-driven (Claude fetches + converts + calls paperboy via skill file), which is now moot given skill removal. The capability itself may return under a different implementation approach.
+
+---
+
+## 2026-03-26 — URL to Kindle (PB-005)
+
+### Design Decision
+- **ADR: skill-driven extraction over server-side extraction** — URL-to-Kindle was designed as a skill workflow (Claude fetches + converts + calls paperboy). Both the skill and this feature have since been dropped (see 2026-03-31 entries).
+
+---
+
 ## 2026-03-17 — CLI Version + Claude Code Skill
 
 ### Feature Completed

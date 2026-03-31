@@ -1,6 +1,6 @@
 # Paperboy — System Spec
 
-> Last updated: 2026-03-17
+> Last updated: 2026-03-26
 > Status: Implemented
 
 ## 1. Problem Statement
@@ -131,9 +131,9 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ## 8. CLI Distribution
 
-> Updated 2026-03-17 via feature: CLI Version + Claude Code Skill
+> Updated 2026-03-31 via removal: Claude Code Skill approach dropped
 
-The system provides a CLI entry point (`paperboy`) as an alternative to the MCP server, enabling terminal-based usage and Claude Code skill invocation.
+The system provides a CLI entry point (`paperboy`) as an alternative to the MCP server, enabling terminal-based usage.
 
 ### CLI Interface
 
@@ -180,10 +180,6 @@ The CLI loads environment variables in the following order (first match wins):
 1. If `--file <path>` is provided → read from file (rejects files > 25 MB)
 2. If no `--file` and stdin is piped (`!process.stdin.isTTY`) → read from stdin (30-second timeout)
 3. If no `--file` and stdin is a terminal → error with guidance
-
-### Claude Code Skill
-
-A skill file at `examples/claude-skill/SKILL.md` teaches Claude Code how to invoke the CLI for send-to-Kindle workflows. The skill documents only implemented flags and capabilities.
 
 ### Package Distribution
 

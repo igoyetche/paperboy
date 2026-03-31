@@ -11,7 +11,7 @@ After installing Paperboy (`npm install -g`), the user must manually create `~/.
 
 Both distribution paths need a setup story:
 - **Human in terminal** — needs an interactive wizard that prompts for each value
-- **Claude via skill** — needs a non-interactive mode that accepts values as flags
+- **Automation / scripting** — needs a non-interactive mode that accepts values as flags
 
 ## Scope
 
@@ -23,7 +23,6 @@ Both distribution paths need a setup story:
 - Writes `~/.paperboy/.env` with the provided values
 - Refuses to overwrite existing `~/.paperboy/.env` without `--force` flag
 - Optional `--verify` flag that sends a test document after writing config
-- Update SKILL.md with a setup section that uses the non-interactive mode
 - `paperboy init --show` to print current config location and status (configured / not configured) without revealing secrets
 
 ### Out of scope
@@ -42,6 +41,5 @@ Both distribution paths need a setup story:
 4. **Overwrite protection:** If `~/.paperboy/.env` already exists, `init` exits with a message unless `--force` is passed
 5. **Verify flag:** `paperboy init --verify` writes the config and then sends a test EPUB titled "Paperboy Setup Test" to the configured Kindle device
 6. **Show flag:** `paperboy init --show` prints whether config exists and its path, without revealing credential values
-7. **Skill integration:** SKILL.md includes a setup section instructing Claude to use `--non-interactive` flags, gathering values conversationally before invoking the command
-8. **Exit codes:** `init` uses exit code 0 on success, 1 on validation error, 4 on config write failure
+7. **Exit codes:** `init` uses exit code 0 on success, 1 on validation error, 4 on config write failure
 9. **No regression:** Existing `paperboy --title ... --file ...` behavior is unchanged
