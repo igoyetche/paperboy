@@ -4,6 +4,14 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-03-31 — nodemailer v6 → v8 upgrade (PB-010)
+
+**Reason:** `npm audit --audit-level=high` found a critical vulnerability in nodemailer v6. Resolved via `npm audit fix --force` which upgraded to v8.0.4.
+
+**Compatibility verified:** `createTransport`, `connectionTimeout`/`socketTimeout` options, and `responseCode` error property are all present and unchanged in nodemailer v8 (confirmed by inspecting `node_modules/nodemailer/lib/smtp-connection/index.js`). Nodemailer v8 does not ship its own TypeScript types, so `@types/nodemailer` remains required. The DefinitelyTyped package was updated from `^6.4.17` to `^7.0.0` (latest: 7.0.11); no v8 variant exists on DefinitelyTyped, and the v7 types cover the full API surface used in `smtp-mailer.ts`.
+
+---
+
 ## 2026-03-31 — Remove Claude Code Skill approach
 
 ### ADR
