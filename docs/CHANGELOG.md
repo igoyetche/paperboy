@@ -10,6 +10,37 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-03-31 — PB-009 Watch Folder (Phase 1)
+
+### Feature Complete
+- **Watch Folder**: `paperboy watch` foreground watcher — monitors a configured folder for `.md` files, converts each to EPUB, and sends to Kindle automatically. Retry logic for transient SMTP failures (3x exponential backoff), graceful shutdown, duplicate processing prevention, and OS service template configs. 190 tests, all passing.
+
+### Spec Changes
+- **specs/main-spec.md**: Added Watch Folder section documenting `WATCH_FOLDER` env var and `paperboy watch` command.
+- **infrastructure/config.ts**: Added optional `watchFolder` to `Config` interface.
+
+### New Modules
+- `src/domain/title-extractor.ts` — Extract title from first H1 in markdown, fallback to filename
+- `src/application/watcher.ts` — Watcher orchestrator with retry logic, queue, and graceful shutdown
+- `src/infrastructure/watcher/folder-watcher.ts` — Chokidar wrapper with injected watch function
+- `src/infrastructure/watcher/file-mover.ts` — Move files to sent/error with deduplication
+- `src/watch-entry.ts` — Watcher composition root (dotenv, config, wire deps)
+- `scripts/service-templates/` — OS service templates for Windows, macOS, Linux
+
+### Modified Modules
+- `src/cli-entry.ts` — Added `watch` subcommand routing before `--help`/`--version`
+- `src/infrastructure/config.ts` — Added `watchFolder?: string` to Config
+
+### Design Decisions
+- Phase 1 ships foreground watcher + template configs; Phase 2 will automate service install
+- Subcommand routing in cli-entry.ts (check argv[0] before --help/--version)
+- chokidar v4 with `awaitWriteFinish` for cross-platform file watching
+- Sequential processing (one file at a time) with in-memory queue
+- Transient SMTP failures (cause === "connection") retry 3x with exponential backoff (2s, 4s, 8s)
+- Sent-but-not-moved files tracked in memory Set to prevent re-processing
+
+---
+
 ## 2026-03-31 — nodemailer v6 → v8 upgrade (PB-010)
 
 **Reason:** `npm audit --audit-level=high` found a critical vulnerability in nodemailer v6. Resolved via `npm audit fix --force` which upgraded to v8.0.4.

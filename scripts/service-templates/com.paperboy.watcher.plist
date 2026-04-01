@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Paperboy Watcher — macOS launchd config
+
+  HOW TO USE:
+  1. Replace /path/to/npx with your npx path (run: which npx)
+     Or if installed globally, use the paperboy binary path (run: which paperboy)
+  2. Copy to ~/Library/LaunchAgents/ and load:
+     cp com.paperboy.watcher.plist ~/Library/LaunchAgents/
+     launchctl load ~/Library/LaunchAgents/com.paperboy.watcher.plist
+
+  To unload:
+     launchctl unload ~/Library/LaunchAgents/com.paperboy.watcher.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.paperboy.watcher</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/path/to/npx</string>
+    <string>paperboy</string>
+    <string>watch</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>~/Library/Logs/paperboy-watcher.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>~/Library/Logs/paperboy-watcher.log</string>
+</dict>
+</plist>

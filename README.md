@@ -175,6 +175,72 @@ Or with Docker Compose:
 docker compose up
 ```
 
+## Folder Watcher
+
+The folder watcher monitors a directory for Markdown files and automatically sends each one to your Kindle. Drop a `.md` file in — it converts, sends, and moves the file to `sent/` when done (or `error/` if something goes wrong).
+
+### Setup
+
+Add `WATCH_FOLDER` to your `.env`:
+
+```
+WATCH_FOLDER=/path/to/your/kindle-inbox
+```
+
+The folder must exist before starting the watcher. The `sent/` and `error/` subdirectories are created automatically.
+
+### Run
+
+```bash
+paperboy watch
+```
+
+Files already in the folder when the watcher starts are processed immediately. New files are picked up as they arrive.
+
+### Run as a background service
+
+Service templates are provided in `scripts/service-templates/`.
+
+**Linux (systemd):**
+
+```bash
+# Edit the file and replace /path/to/npx with the output of: which npx
+cp scripts/service-templates/paperboy-watcher.service ~/.config/systemd/user/
+systemctl --user enable --now paperboy-watcher
+systemctl --user status paperboy-watcher
+journalctl --user -u paperboy-watcher   # view logs
+```
+
+**macOS (launchd):**
+
+```bash
+# Edit the file and replace /path/to/npx with the output of: which npx
+cp scripts/service-templates/com.paperboy.watcher.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.paperboy.watcher.plist
+# Logs: ~/Library/Logs/paperboy-watcher.log
+```
+
+**Windows (Task Scheduler):**
+
+```powershell
+# Edit the file and replace C:\path\to\npx.cmd with the output of: where npx
+schtasks /create /tn "PaperboyWatcher" /xml "scripts\service-templates\windows-task.xml"
+
+# Or as a one-liner (no XML edit needed):
+schtasks /create /tn "PaperboyWatcher" /tr "\"C:\path\to\npx.cmd\" paperboy watch" /sc onlogon /rl limited
+```
+
+The task starts at login and restarts automatically on failure.
+
+### How it works
+
+- Watches only the root of `WATCH_FOLDER` (not subdirectories)
+- Waits 2 seconds after a file stops changing before processing (safe for slow copies)
+- Processes files one at a time
+- Retries transient SMTP failures up to 3 times with exponential backoff
+- Permanent errors (auth failure, rejection) are not retried
+- Shuts down gracefully on SIGINT/SIGTERM, draining any in-progress file
+
 ## Development
 
 ```bash

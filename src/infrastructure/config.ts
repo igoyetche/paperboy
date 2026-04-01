@@ -11,6 +11,7 @@ export interface Config {
   defaultAuthor: string;
   http?: { port: number; authToken: string };
   logLevel: string;
+  watchFolder?: string;
 }
 
 function requireEnv(name: string): string {
@@ -101,6 +102,8 @@ export function loadConfig(): Config {
     http = { port: Number(httpPort), authToken };
   }
 
+  const watchFolder = process.env.WATCH_FOLDER || undefined;
+
   return {
     devices,
     sender: { email: senderEmailResult.value.value },
@@ -108,5 +111,6 @@ export function loadConfig(): Config {
     defaultAuthor,
     http,
     logLevel,
+    watchFolder,
   };
 }

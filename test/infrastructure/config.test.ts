@@ -26,6 +26,7 @@ describe("loadConfig", () => {
       "MCP_HTTP_PORT",
       "MCP_AUTH_TOKEN",
       "LOG_LEVEL",
+      "WATCH_FOLDER",
     ]) {
       delete process.env[key];
     }
@@ -144,5 +145,20 @@ describe("loadConfig", () => {
     Object.assign(process.env, requiredEnv());
     const config = loadConfig();
     expect(config.logLevel).toBe("info");
+  });
+
+  it("includes watchFolder when WATCH_FOLDER is set", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      WATCH_FOLDER: "/tmp/kindle-inbox",
+    });
+    const config = loadConfig();
+    expect(config.watchFolder).toBe("/tmp/kindle-inbox");
+  });
+
+  it("omits watchFolder when WATCH_FOLDER is not set", () => {
+    Object.assign(process.env, requiredEnv());
+    const config = loadConfig();
+    expect(config.watchFolder).toBeUndefined();
   });
 });
