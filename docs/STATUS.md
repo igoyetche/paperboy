@@ -1,7 +1,7 @@
 # Project Status Dashboard
 
 > Last updated: 2026-04-01
-> Last ticket code: PB-011
+> Last ticket code: PB-014
 
 ## Active Work
 
@@ -16,6 +16,9 @@
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
 | PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
+| PB-012 | Accept EPUB Files (No Transformation) | Feature | specs/main-spec.md | — | Medium |
+| PB-013 | Watcher File Logs | Feature | — | — | Low |
+| PB-014 | SonarQube CI | Feature | — | — | Medium |
 
 ## Completed
 
