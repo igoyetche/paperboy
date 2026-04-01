@@ -1,17 +1,18 @@
 # Project Status Dashboard
 
-> Last updated: 2026-03-31
+> Last updated: 2026-04-01
 > Last ticket code: PB-010
 
 ## Active Work
 
-_None_
+| Code | Feature | Phase | Specs Affected | Plan | Status |
+|------|---------|-------|---|---|---|
+| PB-010 | Safe npm Packages | 🔄 In Progress | — | plans/active/PB-010-safe-packages.md | High |
 
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|-------|---|---|---|
-| PB-010 | Safe npm Packages | Feature | — | — | High |
 | PB-009 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
