@@ -27,88 +27,98 @@ interface PackageJson {
   readonly version: string;
 }
 
-// ---------------------------------------------------------------------------
-// 0. Handle --help and --version before loading config (no env vars needed)
-// ---------------------------------------------------------------------------
+async function main(): Promise<void> {
+  // ---------------------------------------------------------------------------
+  // 0. Handle --help and --version before loading config (no env vars needed)
+  // ---------------------------------------------------------------------------
 
-const rawArgs = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
 
-// ---------------------------------------------------------------------------
-// 0a. Subcommand routing: "watch" delegates to watch-entry module
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // 0a. Subcommand routing: "watch" delegates to watch-entry module
+  // ---------------------------------------------------------------------------
 
-if (rawArgs[0] === "watch") {
-  // Replace process.argv so watch-entry sees only the args after "watch"
-  const [node, script] = process.argv;
-  process.argv = [node ?? "node", script ?? "paperboy", ...rawArgs.slice(1)];
-  await import("./watch-entry.js");
+  if (rawArgs[0] === "watch") {
+    // Replace process.argv so watch-entry sees only the args after "watch"
+    const [node, script] = process.argv;
+    process.argv = [node ?? "node", script ?? "paperboy", ...rawArgs.slice(1)];
+    // watch-entry sets up a long-running watcher with its own shutdown handlers.
+    await import("./watch-entry.js");
+    return;
+  }
+
+  if (rawArgs.includes("--help")) {
+    process.stderr.write(getUsageText() + "\n");
+    process.exit(0);
+  }
+
+  if (rawArgs.includes("--version")) {
+    const pkgUrl = new URL("../package.json", import.meta.url);
+    const pkgJson = JSON.parse(readFileSync(pkgUrl, "utf-8")) as PackageJson;
+    process.stderr.write(pkgJson.version + "\n");
+    process.exit(0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 1. Load .env files (shared logic with watch-entry.ts)
+  // ---------------------------------------------------------------------------
+
+  loadDotenv((msg) => process.stderr.write(msg + "\n"));
+
+  // ---------------------------------------------------------------------------
+  // 2. Read version from package.json
+  //    Use URL + readFileSync so the path resolves correctly regardless of CWD.
+  // ---------------------------------------------------------------------------
+
+  const pkgPath = new URL("../package.json", import.meta.url);
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as PackageJson;
+  const version = pkg.version;
+
+  // ---------------------------------------------------------------------------
+  // 3. Load config (fail-fast) → wire dependencies → run CLI
+  //    Config errors are the only expected failure path here; all other
+  //    errors propagate through the Result types inside run().
+  // ---------------------------------------------------------------------------
+
+  try {
+    const config = loadConfig();
+
+    // ADR #9: Use "silent" log level so pino produces no output in CLI mode.
+    // The CLI communicates with the user exclusively through stderr.
+    const pinoLogger = createPinoLogger("silent");
+    const deliveryLogger = createDeliveryLogger(pinoLogger);
+
+    const converter = new MarkdownEpubConverter();
+    const mailer = new SmtpMailer({ sender: config.sender, smtp: config.smtp });
+    const service = new SendToKindleService(converter, mailer, deliveryLogger);
+
+    // ADR #10: Coerce process.stdin.isTTY to boolean — it is `undefined` when
+    // stdin is redirected, which would be incorrectly truthy if not narrowed.
+    const isTTY: boolean = process.stdin.isTTY === true;
+
+    const exitCode = await run({
+      service,
+      devices: config.devices,
+      defaultAuthor: config.defaultAuthor,
+      argv: process.argv.slice(2),
+      isTTY,
+      readFromFile,
+      readFromStdin,
+      stdin: process.stdin,
+      stderr: (msg: string) => process.stderr.write(msg + "\n"),
+      version,
+    });
+
+    process.exit(exitCode);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    process.stderr.write(`Configuration error: ${message}\n`);
+    process.exit(4);
+  }
 }
 
-if (rawArgs.includes("--help")) {
-  process.stderr.write(getUsageText() + "\n");
-  process.exit(0);
-}
-
-if (rawArgs.includes("--version")) {
-  const pkgUrl = new URL("../package.json", import.meta.url);
-  const pkgJson = JSON.parse(readFileSync(pkgUrl, "utf-8")) as PackageJson;
-  process.stderr.write(pkgJson.version + "\n");
-  process.exit(0);
-}
-
-// ---------------------------------------------------------------------------
-// 1. Load .env files (shared logic with watch-entry.ts)
-// ---------------------------------------------------------------------------
-
-loadDotenv((msg) => process.stderr.write(msg + "\n"));
-
-// ---------------------------------------------------------------------------
-// 2. Read version from package.json
-//    Use URL + readFileSync so the path resolves correctly regardless of CWD.
-// ---------------------------------------------------------------------------
-
-const pkgPath = new URL("../package.json", import.meta.url);
-const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as PackageJson;
-const version = pkg.version;
-
-// ---------------------------------------------------------------------------
-// 3. Load config (fail-fast) → wire dependencies → run CLI
-//    Config errors are the only expected failure path here; all other
-//    errors propagate through the Result types inside run().
-// ---------------------------------------------------------------------------
-
-try {
-  const config = loadConfig();
-
-  // ADR #9: Use "silent" log level so pino produces no output in CLI mode.
-  // The CLI communicates with the user exclusively through stderr.
-  const pinoLogger = createPinoLogger("silent");
-  const deliveryLogger = createDeliveryLogger(pinoLogger);
-
-  const converter = new MarkdownEpubConverter();
-  const mailer = new SmtpMailer({ sender: config.sender, smtp: config.smtp });
-  const service = new SendToKindleService(converter, mailer, deliveryLogger);
-
-  // ADR #10: Coerce process.stdin.isTTY to boolean — it is `undefined` when
-  // stdin is redirected, which would be incorrectly truthy if not narrowed.
-  const isTTY: boolean = process.stdin.isTTY === true;
-
-  const exitCode = await run({
-    service,
-    devices: config.devices,
-    defaultAuthor: config.defaultAuthor,
-    argv: process.argv.slice(2),
-    isTTY,
-    readFromFile,
-    readFromStdin,
-    stdin: process.stdin,
-    stderr: (msg: string) => process.stderr.write(msg + "\n"),
-    version,
-  });
-
-  process.exit(exitCode);
-} catch (error: unknown) {
+main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : "Unknown error";
-  process.stderr.write(`Configuration error: ${message}\n`);
-  process.exit(4);
-}
+  process.stderr.write(`Fatal error: ${message}\n`);
+  process.exit(1);
+});
