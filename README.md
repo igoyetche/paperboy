@@ -70,6 +70,7 @@ Multiple devices: `KINDLE_DEVICES=personal:you@kindle.com,partner:them@kindle.co
 | Variable | Default | Description |
 |---|---|---|
 | `DEFAULT_AUTHOR` | `Claude` | Author name when none is specified |
+| `WATCH_FOLDER` | — | Path to folder for the `paperboy watch` command (auto-sends files) |
 | `MCP_HTTP_PORT` | — | Enables HTTP/SSE transport on this port |
 | `MCP_AUTH_TOKEN` | — | Required when `MCP_HTTP_PORT` is set |
 | `LOG_LEVEL` | `info` | Pino log level (`debug`, `info`, `warn`, `error`) |
@@ -241,15 +242,25 @@ The task starts at login and restarts automatically on failure.
 - Permanent errors (auth failure, rejection) are not retried
 - Shuts down gracefully on SIGINT/SIGTERM, draining any in-progress file
 
+## Security
+
+**Dependency Scanning:** npm audit is enforced at two points:
+
+1. **Pre-commit hook** — blocks commits if high/critical vulnerabilities are found
+2. **CI/CD workflow** — blocks merges if high/critical vulnerabilities are found
+
+Run locally: `npm run audit:ci` (exits non-zero if vulnerabilities present)
+
 ## Development
 
 ```bash
 npm run dev          # Run MCP server with tsx (no build step)
 npm run cli -- --help  # Run CLI with tsx
 npm run build        # Compile TypeScript to dist/
-npm test             # Run automated tests (149 tests)
+npm test             # Run automated tests (190 tests)
 npm run test:watch   # Run tests in watch mode
 npm run test:email   # Send a real test email to verify SMTP config
+npm run audit:ci     # Check for high/critical npm vulnerabilities
 ```
 
 ### Gmail Setup
