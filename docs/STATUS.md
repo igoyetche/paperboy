@@ -1,17 +1,15 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-01
-> Last ticket code: PB-014
+> Last updated: 2026-04-09
+> Last ticket code: PB-017
 
 ## Active Work
 
-| Code | Feature | Phase | Specs Affected | Plan | Status |
-|------|---------|-------|---|---|---|
+(None — all assigned work complete)
 
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
-|------|---------|-------|---|---|---|
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
@@ -24,6 +22,8 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-017 | Fix Image Embedding for Kindle EPUB | specs/main-spec.md | 2026-04-09 | plans/done/PB-017-2026-04-09-kindle-epub-image-files.md |
+| PB-016 | Online Image Downloading | specs/PB-016-image-downloading-spec.md, specs/main-spec.md | 2026-04-08 | plans/done/PB-016-2026-04-08-online-image-downloading.md |
 | PB-010 | Safe npm Packages | — | 2026-04-01 | plans/done/PB-010-2026-04-01-safe-packages.md |
 | PB-009 | Watch Folder | specs/main-spec.md | 2026-03-31 | plans/done/PB-009-2026-03-31-watch-folder.md |
 | PB-005 | URL to Kindle | — | Dropped 2026-03-31 | plans/done/PB-005-2026-03-31-url-to-kindle-dropped.md |

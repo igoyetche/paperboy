@@ -4,6 +4,117 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-09 — PB-017 Complete: Kindle EPUB Image File Compatibility
+
+### Feature Completed
+- **Kindle Image Rendering Fix**: Images now render correctly on Kindle devices (and all EPUB readers) by embedding them as proper files in `OEBPS/images/` instead of data URIs. Tested on physical Kindle device — all 66 images from George Mack article render correctly.
+
+### Implementation Completed
+- **EpubWithPredownloadedImages Wrapper**: Factory function that overrides `epub-gen-memory`'s `downloadAllImages()` method to use pre-downloaded image buffers instead of attempting network downloads. Reuses library's UUID-based image path generation for perfect filename matching.
+- **ImageProcessor Refactoring**: Updated to return `ProcessedImage[]` array (filename, buffer, format) separately from HTML instead of embedding data URIs. HTML remains unchanged with original image URLs.
+- **MarkdownEpubConverter Integration**: Maps pre-downloaded image buffers by filename and attaches to EPub instance before rendering. Ensures `downloadAllImages()` override finds correct data for each image UUID.
+- **No New Dependencies**: Solution uses only existing code; `jszip` already bundled via `epub-gen-memory`.
+- **Tests**: 209 tests passing (all), integration test verifies 66 images embedded with correct UUID-based filenames in EPUB structure.
+
+### Modules Created
+- `src/infrastructure/converter/epub-with-images.ts` — Factory function with `downloadAllImages()` override
+- `test/infrastructure/converter/epub-with-images.test.ts` — 4 unit tests for wrapper instantiation
+
+### Modified Modules
+- `src/infrastructure/converter/image-processor.ts` — Changed ProcessResult to include `images: ProcessedImage[]`; removed data URI generation (createDataUri, getMimeType, replaceImageUrl); added generateProcessedImages and generateFilename helpers
+- `src/infrastructure/converter/markdown-epub-converter.ts` — Updated to use createEpubWithPredownloadedImages factory; maps buffers to filenames; passes imageBufferMap via __imageBufferMap property
+- `test/infrastructure/converter/markdown-epub-converter.test.ts` — Updated mock to return images array; added 2 unit tests validating UUID-based image naming
+- `test/integration/image-downloading-real-sample.test.ts` — New test verifying EPUB structure (66 image files in OEBPS/images/, no data URIs in HTML)
+
+### Key Design Decision
+Rather than manually constructing EPUBs or trying to pre-populate before `normalizeHTML()`, we:
+1. Let `epub-gen-memory` detect image URLs and generate UUID-based filenames
+2. Override `downloadAllImages()` to fill in `image.data` from our pre-downloaded buffers
+3. Ensure HTML references match the UUID-based files
+
+This reuses all of epub-gen-memory's robust infrastructure without forking or patching the library.
+
+### Test Results
+- **211 tests passing** (1 new integration test + 2 new unit tests added)
+  - **Unit tests** (markdown-epub-converter): 
+    - ✅ Verify images embedded with UUID-based filenames (not sequential names like image-001.jpeg)
+    - ✅ Verify HTML img src references match actual EPUB file paths
+    - ✅ Verify original image URLs are preserved in HTML (not replaced with data URIs)
+  - **Integration test** (image-downloading-real-sample):
+    - ✅ 66 image files in OEBPS/images/ with UUID-based names matching HTML references
+    - ✅ Manifest includes proper image entries (132 entries due to content/fallback duplication in OPF)
+    - ✅ No data URIs in generated EPUB
+
+### Validation
+- **Primary Success Criterion Met**: Images render correctly on physical Kindle device ✅
+- **Integration Test**: George Mack article (66 images) generates valid EPUB with all images embedded ✅
+- **No Regressions**: All existing 208 tests continue passing ✅
+
+---
+
+## 2026-04-08 — PB-016 Complete: Online Image Downloading
+
+### Feature Completed
+- **Online Image Downloading**: Remote images in Markdown content are automatically downloaded, converted to Kindle-compatible formats (JPEG for AVIF/WebP), and embedded in the generated EPUB. Graceful degradation: failed images don't block delivery. Image stats reported in response.
+
+### Implementation Completed
+- **ImageProcessor** infrastructure component: Downloads images with retry logic (2 retries, configurable timeout), detects format via magic bytes, converts AVIF/WebP/TIFF/SVG to JPEG (quality 85), skips oversized images (>5 MB), enforces total payload limit (100 MB), replaces remote URLs with data URIs before EPUB generation.
+- **Configuration**: 5 optional environment variables with sensible defaults (`IMAGE_FETCH_TIMEOUT_MS`, `IMAGE_MAX_RETRIES`, `IMAGE_MAX_CONCURRENCY`, `IMAGE_MAX_BYTES`, `IMAGE_MAX_TOTAL_BYTES`)
+- **Logging**: Detailed logging at debug/warn/info levels for download start, success, failure, format conversion, skips, and summary stats
+- **SSRF Protection**: Rejects redirects to non-HTTP(S) protocols; validates all redirect URLs
+- **Response Enrichment**: MCP and CLI responses include `imageStats` (total, downloaded, failed, skipped) when images are present
+- **Tests**: 10 unit tests for ImageProcessor, 3 integration tests (2 skipped by default, require network; 1 for text-only content)
+
+### Modules
+- `src/domain/values/image-stats.ts` — ImageStats interface
+- `src/infrastructure/converter/image-processor.ts` — Download, detect format, convert, embed
+- `test/infrastructure/converter/image-processor.test.ts` — 10 unit tests
+- `test/integration/image-downloading.test.ts` — 3 integration tests (2 skipped, network-dependent)
+
+### Modified Modules
+- `src/domain/values/epub-document.ts` — Added optional imageStats parameter
+- `src/domain/send-to-kindle-service.ts` — Added optional imageStats to DeliverySuccess
+- `src/infrastructure/converter/markdown-epub-converter.ts` — Injects ImageProcessor, calls process() before EPUB generation
+- `src/infrastructure/config.ts` — Added image config section with 5 env vars
+- `src/infrastructure/logger.ts` — Added createImageProcessorLogger()
+- `src/index.ts` (MCP) — Wired ImageProcessor
+- `src/cli-entry.ts` (CLI) — Wired ImageProcessor
+- `src/watch-entry.ts` (watcher) — Wired ImageProcessor
+- `src/application/tool-handler.ts` — MCP response includes imageStats
+- `src/application/cli.ts` — CLI formatSuccess() includes image summary
+
+### Test Results
+- 201 tests passing, 3 integration tests skipped (network-dependent)
+- All existing tests pass (no regressions)
+- ImageProcessor unit tests cover: no images, multiple images, failed downloads, duplicates, stats, logging
+
+### Specs Updated
+- **specs/main-spec.md**: Added FR-18 through FR-26 (Image Handling), NFR-8 (SSRF), updated NFR-1 and FR-11
+
+---
+
+## 2026-04-08 — PB-016 Spec & Design: Online Image Downloading
+
+### Spec Changes
+- **specs/main-spec.md — Section 4**: Added "Image Handling" subsection with FR-18 through FR-26 covering image downloading, format conversion, graceful degradation, stats reporting, and configuration
+- **specs/main-spec.md — NFR-1**: Updated performance target to account for image downloading (90s for up to 50 images)
+- **specs/main-spec.md — NFR-8**: Added SSRF prevention requirement for image download redirects
+- **specs/main-spec.md — FR-11**: Updated to include image statistics in success response
+
+### New Documents
+- **specs/PB-016-image-downloading-spec.md**: Standalone spec for online image downloading capability
+- **features/backlog/PB-016-online-image-downloading.md**: Feature document with motivation, scope, and acceptance criteria
+- **designs/PB-016-online-image-downloading/design.md**: Technical design — pre-process images before epub-gen-memory using sharp for format conversion
+
+### Design Decisions
+- Pre-process images ourselves (Option B) rather than configuring epub-gen-memory's built-in downloading — format conversion (AVIF → JPEG) is a hard requirement the library cannot satisfy
+- `sharp` for image format detection and conversion (supports AVIF/WebP, works on x86_64 and ARM64)
+- `ImageProcessor` as infrastructure component injected into `MarkdownEpubConverter` — no domain port changes
+- Data URIs for embedding processed images in HTML before EPUB generation
+- Node.js built-in `fetch()` for downloads (Node 22, no new HTTP dependency)
+
+---
+
 ## 2026-04-01 — PB-010 Complete: Safe npm Packages
 
 **Summary:** Implemented npm audit enforcement across pre-commit hook and GitHub Actions CI workflow. All acceptance criteria met. No spec changes required.

@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import JSZip from "jszip";
 import { MarkdownEpubConverter } from "../../../src/infrastructure/converter/markdown-epub-converter.js";
+import type { ImageProcessor } from "../../../src/infrastructure/converter/image-processor.js";
 import { Title } from "../../../src/domain/values/title.js";
 import { Author } from "../../../src/domain/values/author.js";
 import { MarkdownContent } from "../../../src/domain/values/markdown-content.js";
@@ -23,7 +25,17 @@ function makeContent(v: string) {
 }
 
 describe("MarkdownEpubConverter", () => {
-  const converter = new MarkdownEpubConverter();
+  // Mock ImageProcessor that passes HTML through unchanged
+  const mockImageProcessor: ImageProcessor = {
+    // eslint-disable-next-line @typescript-eslint/require-await
+    process: vi.fn(async (html: string) => ({
+      html,
+      images: [],
+      stats: { total: 0, downloaded: 0, failed: 0, skipped: 0 },
+    })),
+  };
+
+  const converter = new MarkdownEpubConverter(mockImageProcessor);
 
   it("produces an EpubDocument with correct title", async () => {
     const result = await converter.toEpub(
@@ -113,5 +125,148 @@ describe("MarkdownEpubConverter", () => {
     if (result.ok) {
       expect(result.value.sizeBytes).toBeGreaterThan(0);
     }
+  });
+
+  it("embeds images with UUID-based filenames and removes original URLs", async () => {
+    // Create a mock ImageProcessor that returns actual image buffers
+    // Simulate downloading 2 images
+    const testImageBuffer1 = Buffer.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG header
+    const testImageBuffer2 = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
+
+    const mockImageProcessorWithImages: ImageProcessor = {
+      // eslint-disable-next-line @typescript-eslint/require-await
+      process: vi.fn(async (html: string) => ({
+        html, // Original HTML unchanged with https:// URLs
+        images: [
+          {
+            filename: "image-001.jpeg",
+            buffer: testImageBuffer1,
+            format: "jpeg",
+          },
+          {
+            filename: "image-002.png",
+            buffer: testImageBuffer2,
+            format: "png",
+          },
+        ],
+        stats: { total: 2, downloaded: 2, failed: 0, skipped: 0 },
+      })),
+    };
+
+    const converterWithImages = new MarkdownEpubConverter(
+      mockImageProcessorWithImages,
+    );
+
+    const result = await converterWithImages.toEpub(
+      makeTitle("Images Test"),
+      makeContent(
+        '# Test\n\n<img src="https://example.com/image1.jpg" alt="img1">\n<img src="https://example.com/image2.png" alt="img2">',
+      ),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Conversion failed: ${result.error.message}`);
+    }
+
+    // Extract EPUB and verify image structure
+    const epubBuffer = result.value.buffer;
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(epubBuffer);
+
+    // Verify image files exist with UUID-based names
+    const imageFiles = Object.keys(loadedZip.files).filter(
+      (path) => path.startsWith("OEBPS/images/") && !path.endsWith("/"),
+    );
+
+    expect(imageFiles.length).toBe(2);
+    // Filenames should be UUIDs, not "image-001.jpeg"
+    imageFiles.forEach((path) => {
+      const filename = path.split("/").pop();
+      // UUID format: 8-4-4-4-12 hex digits with dashes, ending in .jpeg or .png
+      expect(filename).toMatch(/^[a-f0-9\-]{36}\.(jpeg|png)$/);
+    });
+
+    // Verify HTML references match the UUID filenames
+    // Find the chapter file (it's named 0_Ch1.xhtml or similar)
+    const chapterPath = Object.keys(loadedZip.files).find((path) =>
+      path.match(/OEBPS\/\d+_.*\.xhtml$/),
+    );
+    expect(chapterPath).toBeDefined();
+
+    if (!chapterPath) {
+      throw new Error("No chapter XHTML file found in EPUB");
+    }
+
+    const chapterFile = loadedZip.file(chapterPath);
+    if (!chapterFile) {
+      throw new Error(`Cannot read chapter file: ${chapterPath}`);
+    }
+
+    const chapter = await chapterFile.async("string");
+
+    // Extract all img src values
+    const imgRegex = /<img[^>]+src="([^"]+)"/g;
+    const imgSrcs: string[] = [];
+    let match;
+    while ((match = imgRegex.exec(chapter)) !== null) {
+      imgSrcs.push(match[1]);
+    }
+
+    expect(imgSrcs.length).toBe(2);
+
+    // Verify src paths are UUID-based and match actual files
+    imgSrcs.forEach((src) => {
+      // Should be "images/uuid.extension", not data URI or original URL
+      expect(src).toMatch(/^images\/[a-f0-9\-]{36}\.(jpeg|png)$/);
+
+      // Verify corresponding file exists
+      const expectedPath = `OEBPS/${src}`;
+      expect(imageFiles).toContain(expectedPath);
+    });
+
+    // Verify no data URIs
+    expect(chapter).not.toContain("data:image/");
+  });
+
+  it("preserves original image URLs in HTML during processing (not replaced with data URIs)", async () => {
+    const testImageBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG
+
+    const mockImageProcessorWithImages: ImageProcessor = {
+      // eslint-disable-next-line @typescript-eslint/require-await
+      process: vi.fn(async (html: string) => {
+        // Verify ImageProcessor receives original HTML with https:// URLs
+        expect(html).toContain("https://example.com/test.jpg");
+
+        // Return images array (NOT modified HTML with data URIs)
+        return {
+          html, // HTML unchanged
+          images: [
+            {
+              filename: "image-001.jpeg",
+              buffer: testImageBuffer,
+              format: "jpeg",
+            },
+          ],
+          stats: { total: 1, downloaded: 1, failed: 0, skipped: 0 },
+        };
+      }),
+    };
+
+    const converterWithImages = new MarkdownEpubConverter(
+      mockImageProcessorWithImages,
+    );
+
+    const result = await converterWithImages.toEpub(
+      makeTitle("URL Preservation Test"),
+      makeContent(
+        '# Test\n\n<img src="https://example.com/test.jpg" alt="test">',
+      ),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(mockImageProcessorWithImages.process).toHaveBeenCalled();
   });
 });
