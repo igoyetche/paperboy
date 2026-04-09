@@ -16,8 +16,9 @@ import { join, resolve } from "node:path";
 import { readFile, rename, writeFile, mkdir, stat, readdir } from "node:fs/promises";
 import { watch } from "chokidar";
 import { loadConfig } from "./infrastructure/config.js";
-import { createPinoLogger, createDeliveryLogger } from "./infrastructure/logger.js";
+import { createPinoLogger, createDeliveryLogger, createImageProcessorLogger } from "./infrastructure/logger.js";
 import { MarkdownEpubConverter } from "./infrastructure/converter/markdown-epub-converter.js";
+import { ImageProcessor } from "./infrastructure/converter/image-processor.js";
 import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { Author } from "./domain/values/author.js";
@@ -95,8 +96,10 @@ try {
   // Wire dependencies
   const pinoLogger = createPinoLogger(config.logLevel);
   const deliveryLogger = createDeliveryLogger(pinoLogger);
+  const imageProcessorLogger = createImageProcessorLogger(pinoLogger);
 
-  const converter = new MarkdownEpubConverter();
+  const imageProcessor = new ImageProcessor(config.image, imageProcessorLogger);
+  const converter = new MarkdownEpubConverter(imageProcessor);
   const mailer = new SmtpMailer({ sender: config.sender, smtp: config.smtp });
   const service = new SendToKindleService(converter, mailer, deliveryLogger);
 

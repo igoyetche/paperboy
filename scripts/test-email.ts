@@ -11,8 +11,16 @@ import { SmtpMailer } from '../src/infrastructure/mailer/smtp-mailer.js';
 import { EpubDocument } from '../src/domain/values/epub-document.js';
 
 const config = loadConfig();
+
+// Resolve the default device (first in the list)
+const deviceResult = config.devices.resolve();
+if (!deviceResult.ok) {
+  console.error(`✗ Configuration error: ${deviceResult.error.message}`);
+  process.exit(1);
+}
+const device = deviceResult.value;
+
 const mailer = new SmtpMailer({
-  kindle: config.kindle,
   sender: config.sender,
   smtp: config.smtp,
 });
@@ -24,9 +32,9 @@ const minimalEpub = Buffer.from([
 
 const doc = new EpubDocument('SMTP Configuration Test', minimalEpub);
 
-console.log(`Sending test email to ${config.kindle.email} via ${config.smtp.host}:${config.smtp.port}...`);
+console.log(`Sending test email to ${device.email.value} via ${config.smtp.host}:${config.smtp.port}...`);
 
-const result = await mailer.send(doc);
+const result = await mailer.send(doc, device);
 
 if (result.ok) {
   console.log('✓ Email sent successfully. Check your Kindle inbox.');

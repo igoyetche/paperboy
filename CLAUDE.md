@@ -26,10 +26,14 @@ Feature → Design → Spec → Plan → Implement → Test → Validate → Syn
 ```
 
 1. **FEATURE** — Create feature doc in `docs/features/backlog/[name].md` with motivation, scope, and acceptance criteria. Assign the next sequential ticket code (`PB-NNN`) in the feature header. Check `docs/STATUS.md` for the last used code. **No technical details** — no dependencies, no layer changes, no pipelines, no implementation specifics. Those belong in the design.
-2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs
+
+2. **DESIGN** — Create design doc in `docs/designs/[name].md` exploring technical approach and affected specs. **When starting design work:** move feature from `features/backlog/[name].md` → `features/active/[name].md`
+
 3. **SPEC** — Update affected specs in `docs/specs/` based on approved design; log changes in `docs/CHANGELOG.md`
+
 4. **PLAN** — Create plan in `docs/plans/backlog/[name].md` with tasks referencing spec requirements; add row to `docs/STATUS.md`
-5. **IMPLEMENT** — Move feature from `features/backlog/` → `features/active/[name].md`, move plan from `plans/backlog/` → `plans/active/[name].md`, update STATUS.md to 🔄 In Progress, build each task
+
+5. **IMPLEMENT** — **When starting implementation work:** move feature to `features/active/[name].md` (if not already there), move plan from `plans/backlog/[name].md` → `plans/active/[name].md`, update STATUS.md to 🔄 In Progress, build each task
 6. **TEST** — Run verification defined in task; verify acceptance criteria from spec
 7. **VALIDATE** — Check: implementation matches design, satisfies spec, no side effects on other modules
 8. **SYNC** — Mark task done in plan, update design/spec if implementation diverged, log in CHANGELOG.md
@@ -84,12 +88,12 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 
 **Features:**
 - Create in `docs/features/backlog/[name].md`
-- Move to `docs/features/active/[name].md` when starting implementation
+- Move to `docs/features/active/[name].md` **when starting design work** (design phase entry point)
 - Move to `docs/features/done/[name].md` when all acceptance criteria met
 
 **Plans:**
 - Create in `docs/plans/backlog/[name].md`
-- Move to `docs/plans/active/[name].md` when starting implementation
+- Move to `docs/plans/active/[name].md` **when starting implementation** (implement phase entry point)
 - Move to `docs/plans/done/[name].md` when all tasks are [x] or [-]
 
 **Designs:**
@@ -113,7 +117,9 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 8. Features and plans have lifecycles: backlog → active → done (use file movement to track)
 9. Designs stay in place and get updated during implementation (don't archive)
 10. If validation reveals spec/design errors, update upstream docs BEFORE continuing
-11. **Never create or open a PR without asking first** — even for completed features or adjustments
+11. **Move feature to active immediately when starting design work** — design is the entry point for active work
+12. **Move plan to active immediately when starting implementation** — implementation is the entry point for active work
+13. **Never create or open a PR without asking first** — even for completed features or adjustments
 
 ---
 

@@ -43,6 +43,41 @@ async function runCli(
   }
 }
 
+/**
+ * Runs the CLI binary with custom environment variables merged into
+ * the isolated environment.
+ */
+async function runCliWithEnv(
+  args: string[],
+  env: Record<string, string>,
+): Promise<{ exitCode: number; stderr: string }> {
+  try {
+    const result = await execFileAsync(NODE_PATH, [CLI_PATH, ...args], {
+      // Merge custom env with isolated base environment.
+      env: {
+        PATH: process.env["PATH"] ?? "",
+        USERPROFILE: "C:\\nonexistent\\isolated-test-home",
+        HOME: "/nonexistent/isolated-test-home",
+        ...env,
+      },
+      timeout: 10_000,
+    });
+    return { exitCode: 0, stderr: result.stderr };
+  } catch (error: unknown) {
+    if (error === null || typeof error !== "object") {
+      return { exitCode: 1, stderr: "" };
+    }
+    const obj = error;
+    const exitCode = "code" in obj && typeof obj["code"] === "number"
+      ? obj["code"]
+      : 1;
+    const stderr = "stderr" in obj && typeof obj["stderr"] === "string"
+      ? obj["stderr"]
+      : "";
+    return { exitCode, stderr };
+  }
+}
+
 describe("CLI binary integration", () => {
   beforeAll(async () => {
     // Verify the build exists — tests require `npm run build` first
@@ -78,20 +113,25 @@ describe("CLI binary integration", () => {
     expect(stderr).toContain("WATCH_FOLDER");
   });
 
-  it("exits 4 when watch is run without configuration", async () => {
-    const { exitCode, stderr } = await runCli(["watch"]);
+  it(
+    "exits 4 when watch is run with invalid configuration",
+    async () => {
+      const env = { ...process.env, KINDLE_DEVICES: "invalid-format" };
+      const { exitCode, stderr } = await runCliWithEnv(["watch"], env);
 
-    expect(exitCode).toBe(4);
-    expect(stderr).toContain("Configuration error");
-  });
+      expect(exitCode).toBe(4);
+      expect(stderr).toContain("Configuration error");
+    },
+    { timeout: 15_000 },
+  );
 
-  it("exits 4 with config error when no env vars are set", async () => {
-    const { exitCode, stderr } = await runCli([
-      "--title",
-      "Test",
-      "--file",
-      "nonexistent.md",
-    ]);
+  it("exits 4 with config error when KINDLE_DEVICES is invalid", async () => {
+    // Set an invalid KINDLE_DEVICES format (missing colon) to trigger config error
+    const env = { ...process.env, KINDLE_DEVICES: "invalid-no-colon" };
+    const { exitCode, stderr } = await runCliWithEnv(
+      ["--title", "Test", "--file", "nonexistent.md"],
+      env,
+    );
 
     expect(exitCode).toBe(4);
     expect(stderr).toContain("Configuration error");

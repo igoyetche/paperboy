@@ -232,11 +232,28 @@ export function mapErrorToExitCode(error: DomainError): number {
 /**
  * Formats a successful delivery result as a human-readable string.
  * Pattern: "Sent '<title>' to Kindle (<deviceName>) — <sizeBytes> bytes"
+ * If imageStats present, includes: "(<N> images embedded)" or "(<N> of <M> images embedded, <K> failed)"
  *
  * Implements FR-CLI-3
  */
 export function formatSuccess(result: DeliverySuccess): string {
-  return `Sent '${result.title}' to Kindle (${result.deviceName}) — ${result.sizeBytes} bytes`;
+  let message = `Sent '${result.title}' to Kindle (${result.deviceName}) — ${result.sizeBytes} bytes`;
+
+  if (result.imageStats) {
+    const { total, downloaded, failed } = result.imageStats;
+    if (total === 0) {
+      // No images
+      return message;
+    } else if (failed === 0) {
+      // All images succeeded
+      message += ` (${downloaded} images embedded)`;
+    } else {
+      // Some images failed
+      message += ` (${downloaded} of ${total} images embedded, ${failed} failed)`;
+    }
+  }
+
+  return message;
 }
 
 /**

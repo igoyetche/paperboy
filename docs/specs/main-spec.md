@@ -1,6 +1,6 @@
 # Paperboy — System Spec
 
-> Last updated: 2026-03-31
+> Last updated: 2026-04-08
 > Status: Implemented
 
 ## 1. Problem Statement
@@ -49,6 +49,20 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 - **FR-5**: The EPUB output must be a valid EPUB 3.0 package containing title and author metadata and a single content chapter
 - **FR-6**: The EPUB output must preserve Markdown structure (headings, lists, emphasis, code blocks, links) as semantically appropriate EPUB/XHTML markup
 
+### Image Handling
+
+> Updated 2026-04-08 via feature: PB-016
+
+- **FR-18**: The system must download images referenced via `http://` or `https://` URLs in Markdown content and embed them in the generated EPUB
+- **FR-19**: Image downloads must be resilient — a single failed image must not prevent the rest of the document from being converted and delivered
+- **FR-20**: Images in formats not supported by Kindle (AVIF, WebP, TIFF, SVG) must be converted to JPEG before embedding in the EPUB
+- **FR-21**: Format detection must use actual image bytes (magic bytes / file signature), not URL extension or HTTP Content-Type header alone
+- **FR-22**: Images exceeding 5 MB individually must be skipped with a warning
+- **FR-23**: If total downloaded image payload exceeds 100 MB, remaining images must be skipped and the document delivered with images already downloaded
+- **FR-24**: On successful delivery of content containing images, the response must include image statistics: total found, downloaded, failed, and skipped counts
+- **FR-25**: Failed image download URLs must be logged at warn level with the URL and failure reason
+- **FR-26**: Image download timeout, retry count, concurrency, and size limits must be configurable via environment variables with sensible defaults
+
 ### Document Delivery
 
 - **FR-7**: The system must deliver the generated EPUB file as an email attachment to the configured Kindle email address
@@ -58,7 +72,7 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ### Response
 
-- **FR-11**: On successful delivery, the system must return a structured response containing: success indicator, a human-readable message including the document title, and the file size in bytes
+- **FR-11**: On successful delivery, the system must return a structured response containing: success indicator, a human-readable message including the document title, the file size in bytes, and image statistics when applicable
 - **FR-12**: On failure, the system must return a structured response containing: failure indicator, an error category, and descriptive details
 
 ### Configuration
@@ -74,10 +88,11 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 ## 5. Non-Functional Requirements
 
-- **NFR-1 — Performance**: The system must complete content conversion and dispatch the email within 30 seconds for documents under 1 MB
+- **NFR-1 — Performance**: The system must complete content conversion and dispatch the email within 30 seconds for text-only documents under 1 MB. For documents with images, conversion must complete within 90 seconds for up to 50 images assuming adequate network connectivity
 - **NFR-2 — Availability**: The system should be available whenever the host machine (or host environment) is running; no independent uptime SLA is required
 - **NFR-3 — Security**: SMTP credentials and the Kindle email address must never appear in tool call parameters, tool responses, or logs accessible to the MCP client
 - **NFR-4 — Security**: Markdown input must be sanitized during conversion to prevent injection of scripts or malicious content in the generated EPUB
+- **NFR-8 — Security**: Image downloading must not follow redirects to non-HTTP(S) protocols (e.g., `file://`, `data:`, `ftp://`) to prevent SSRF-style attacks
 - **NFR-5 — Security**: Remote access to the system must be authenticated and encrypted — the MCP endpoint must not be publicly accessible without access control
 - **NFR-6 — Observability**: The system must log each delivery attempt with: timestamp, document title, output format, file size, and success/failure status. Logs must not contain SMTP credentials. When using stdio transport, logs must be written to stderr — stdout is reserved exclusively for JSON-RPC messages
 - **NFR-7 — Portability**: The system must be deployable on x86_64 and ARM64 architectures (to support common servers and single-board computers like Raspberry Pi)

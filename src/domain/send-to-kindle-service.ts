@@ -1,4 +1,4 @@
-import type { Title, Author, MarkdownContent, KindleDevice } from "./values/index.js";
+import type { Title, Author, MarkdownContent, KindleDevice, ImageStats } from "./values/index.js";
 import type { ContentConverter, DocumentMailer, DeliveryLogger } from "./ports.js";
 import type { DomainError, Result } from "./errors.js";
 import { ok } from "./errors.js";
@@ -8,6 +8,7 @@ export interface DeliverySuccess {
   readonly title: string;
   readonly sizeBytes: number;
   readonly deviceName: string;
+  readonly imageStats?: ImageStats;
 }
 
 export class SendToKindleService {
@@ -54,6 +55,7 @@ export class SendToKindleService {
       title: title.value,
       sizeBytes: document.sizeBytes,
       deviceName: device.name,
+      imageStats: document.imageStats,
     });
   }
 }

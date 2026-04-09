@@ -83,15 +83,31 @@ export class ToolHandler {
 
     if (!result.ok) return mapErrorToResponse(result.error);
 
+    const responseData: {
+      success: boolean;
+      message: string;
+      sizeBytes: number;
+      imageStats?: {
+        total: number;
+        downloaded: number;
+        failed: number;
+        skipped: number;
+      };
+    } = {
+      success: true,
+      message: `Document '${result.value.title}' sent to Kindle (${result.value.deviceName}) successfully.`,
+      sizeBytes: result.value.sizeBytes,
+    };
+
+    if (result.value.imageStats) {
+      responseData.imageStats = result.value.imageStats;
+    }
+
     return {
       content: [
         {
           type: "text",
-          text: JSON.stringify({
-            success: true,
-            message: `Document '${result.value.title}' sent to Kindle (${result.value.deviceName}) successfully.`,
-            sizeBytes: result.value.sizeBytes,
-          }),
+          text: JSON.stringify(responseData),
         },
       ],
     };

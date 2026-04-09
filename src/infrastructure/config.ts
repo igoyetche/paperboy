@@ -12,6 +12,13 @@ export interface Config {
   http?: { port: number; authToken: string };
   logLevel: string;
   watchFolder?: string;
+  image: {
+    fetchTimeoutMs: number;
+    retries: number;
+    maxConcurrency: number;
+    maxImageBytes: number;
+    maxTotalBytes: number;
+  };
 }
 
 function requireEnv(name: string): string {
@@ -104,6 +111,23 @@ export function loadConfig(): Config {
 
   const watchFolder = process.env.WATCH_FOLDER || undefined;
 
+  // Image configuration with defaults
+  const imageFetchTimeoutMs = process.env.IMAGE_FETCH_TIMEOUT_MS
+    ? Number(process.env.IMAGE_FETCH_TIMEOUT_MS)
+    : 15000;
+  const imageRetries = process.env.IMAGE_MAX_RETRIES
+    ? Number(process.env.IMAGE_MAX_RETRIES)
+    : 2;
+  const imageMaxConcurrency = process.env.IMAGE_MAX_CONCURRENCY
+    ? Number(process.env.IMAGE_MAX_CONCURRENCY)
+    : 5;
+  const imageMaxImageBytes = process.env.IMAGE_MAX_BYTES
+    ? Number(process.env.IMAGE_MAX_BYTES)
+    : 5 * 1024 * 1024; // 5 MB
+  const imageMaxTotalBytes = process.env.IMAGE_MAX_TOTAL_BYTES
+    ? Number(process.env.IMAGE_MAX_TOTAL_BYTES)
+    : 100 * 1024 * 1024; // 100 MB
+
   return {
     devices,
     sender: { email: senderEmailResult.value.value },
@@ -112,5 +136,12 @@ export function loadConfig(): Config {
     http,
     logLevel,
     watchFolder,
+    image: {
+      fetchTimeoutMs: imageFetchTimeoutMs,
+      retries: imageRetries,
+      maxConcurrency: imageMaxConcurrency,
+      maxImageBytes: imageMaxImageBytes,
+      maxTotalBytes: imageMaxTotalBytes,
+    },
   };
 }
