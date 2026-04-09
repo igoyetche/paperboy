@@ -1,0 +1,12 @@
+Analyze which would be the best approach to scrap pages like https://www.promptingguide.ai/
+whould it be in the chrome extension or should we do something else?
+
+Idea:
+Combine paperclip with a claude skill, so claude can understand the structure of the index that's not deterministic and then the download of the page can be done with paperclip.
+Steps:
+- Claude code creates the index with the URLs
+- We create a command for paperclip that process that index and generates an .md file based on that.
+
+
+
+We need to change the CLI to make the title parameter optional in the command line since it could be already present in the .md file
