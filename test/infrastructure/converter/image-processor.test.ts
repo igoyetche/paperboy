@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { ImageProcessor } from "../../../src/infrastructure/converter/image-processor.js";
 import type {
   ImageProcessorConfig,
@@ -95,7 +95,7 @@ describe("ImageProcessor", () => {
       expect(result.stats.downloaded).toBe(0);
       expect(mockLogger.imageDownloadFailure).toHaveBeenCalled();
     },
-    { timeout: 60_000 },
+    60_000,
   );
 
   it("deduplicates duplicate image URLs", async () => {
@@ -202,5 +202,275 @@ describe("ImageProcessor", () => {
     expect(result.html).toContain("<p>More content</p>");
     expect(result.html).toContain("<ul>");
     expect(result.html).not.toContain("<img");
+  });
+});
+
+describe("request headers", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends User-Agent and Accept headers on every image request", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(null, { status: 403 }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    await processor.process(`<img src="https://example.com/photo.png" alt="test">`);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://example.com/photo.png",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "User-Agent": expect.stringContaining("Mozilla/5.0"),
+          Accept: expect.stringContaining("image/"),
+        }),
+      }),
+    );
+  });
+});
+
+describe("SSRF protection", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("blocks requests to IPv4 loopback (127.0.0.1) before fetching", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://127.0.0.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockLogger.imageDownloadFailure).toHaveBeenCalledWith(
+      "http://127.0.0.1/image.png",
+      expect.stringContaining("private IP"),
+    );
+  });
+
+  it("blocks requests to private class A (10.x.x.x)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://10.0.0.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks requests to private class B (172.16.x.x)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://172.16.0.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks requests to private class C (192.168.x.x)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://192.168.1.1/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("blocks requests to IPv6 loopback (::1)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="http://[::1]/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("allows requests to public IPs", async () => {
+    // 93.184.216.34 is the real IP of example.com — public, non-private
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(null, { status: 404 }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(defaultConfig, mockLogger);
+
+    await processor.process(
+      `<img src="http://93.184.216.34/image.png" alt="test">`,
+    );
+
+    // fetch should have been called (validation passed), even though the request 404s
+    expect(mockFetch).toHaveBeenCalled();
+  });
+});
+
+describe("redirect following", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // No retries: isolates redirect logic from retry behavior so each test controls
+  // exactly how many fetch calls happen without the retry loop adding extra calls.
+  const noRetryConfig: ImageProcessorConfig = { ...defaultConfig, retries: 0 };
+
+  // A minimal valid 1×1 PNG that sharp can parse
+  const MINIMAL_PNG = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQAABjkB6QAAAABJRU5ErkJggg==",
+    "base64",
+  );
+
+  it("follows a single redirect and downloads the image", async () => {
+    // Both URLs use example.com — an ICANN reserved domain that always resolves
+    // to a public IP (93.184.216.34), so validateUrl's DNS check passes.
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: { Location: "https://example.com/redirected.png" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array(MINIMAL_PNG), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(noRetryConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="https://example.com/image.png" alt="test">`,
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "https://example.com/redirected.png",
+      expect.anything(),
+    );
+    // Image was ultimately downloaded successfully
+    expect(result.stats.downloaded).toBe(1);
+  });
+
+  it("follows up to 5 redirect hops successfully", async () => {
+    // All redirect targets use example.com so validateUrl's DNS check passes on every hop.
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop1" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 302, headers: { Location: "https://example.com/hop2" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 303, headers: { Location: "https://example.com/hop3" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 307, headers: { Location: "https://example.com/hop4" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 308, headers: { Location: "https://example.com/hop5" } }))
+      .mockResolvedValueOnce(new Response(new Uint8Array(MINIMAL_PNG), { status: 200 }));
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(noRetryConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="https://example.com/image.png" alt="test">`,
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(6);
+    expect(result.stats.downloaded).toBe(1);
+  });
+
+  it("fails gracefully when redirect depth exceeds 5 hops", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop1" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop2" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop3" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop4" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop5" } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { Location: "https://example.com/hop6" } }));
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(noRetryConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="https://example.com/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockLogger.imageDownloadFailure).toHaveBeenCalledWith(
+      "https://example.com/image.png",
+      expect.stringContaining("Too many redirects"),
+    );
+  });
+
+  it("fails gracefully when redirect has no Location header", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(null, { status: 302 }), // no Location header
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(noRetryConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="https://example.com/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    expect(mockLogger.imageDownloadFailure).toHaveBeenCalledWith(
+      "https://example.com/image.png",
+      expect.stringContaining("Location"),
+    );
+  });
+
+  it("blocks redirect to a private IP", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { Location: "http://192.168.1.1/secret.png" },
+      }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const mockLogger = createMockLogger();
+    const processor = new ImageProcessor(noRetryConfig, mockLogger);
+
+    const result = await processor.process(
+      `<img src="https://example.com/image.png" alt="test">`,
+    );
+
+    expect(result.stats.failed).toBe(1);
+    // Only one fetch call — the redirect target was rejected without a second fetch
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockLogger.imageDownloadFailure).toHaveBeenCalledWith(
+      "https://example.com/image.png",
+      expect.stringContaining("private IP"),
+    );
   });
 });
