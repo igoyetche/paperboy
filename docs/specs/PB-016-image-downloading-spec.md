@@ -1,5 +1,7 @@
 # PB-016: Online Image Downloading — System Spec
 
+> Updated 2026-04-13 via feature: PB-019 image download compatibility
+
 ## 1. Problem Statement
 
 Markdown content sent through Paperboy frequently contains image references pointing to online resources — CDN-hosted photos, blog illustrations, diagrams. A real-world sample article (`2026-04-08-high-agency-in-30-minutes-george-mack.md`) contains 20+ remote image URLs. Today, these images either silently fail during EPUB generation (crashing the entire conversion if any single download fails) or produce EPUB files with image formats that Kindle devices cannot render (e.g., AVIF, WebP). The result is either a failed delivery or a document with broken/missing images — both unacceptable for a reading experience.
@@ -18,7 +20,7 @@ The underlying library (`epub-gen-memory`) already downloads images referenced i
 ### Non-Goals
 
 - NG-1: No image editing, cropping, or watermark removal
-- NG-2: No support for authenticated or paywalled image URLs (images behind login are out of scope)
+- NG-2: No support for authenticated or paywalled image URLs (images behind login are out of scope). Browser-compatible request headers (FR-14) pass bot-detection and hotlink protection but do not constitute authentication — login-gated images remain out of scope.
 - NG-3: No local/relative image path resolution (only `http://` and `https://` URLs)
 - NG-4: No OCR or automatic alt-text generation for images
 - NG-5: No image compression quality tuning exposed to the user — sensible defaults only
@@ -58,6 +60,13 @@ The underlying library (`epub-gen-memory`) already downloads images referenced i
 
 - **FR-11**: Images exceeding 5 MB individually must be skipped and reported as a warning — they are likely unoptimized source files not suitable for e-reader delivery
 - **FR-12**: If the total downloaded image payload exceeds 100 MB, image downloading must stop for remaining images and the document must be delivered with the images already downloaded, along with a warning
+
+### Request Compatibility
+
+- **FR-14**: Image download requests must include browser-compatible HTTP headers (`User-Agent`, `Accept`, `Accept-Language`) so that WAF-protected and hotlink-protected image hosts serve the asset rather than returning `403 Forbidden`
+- **FR-15**: The system must follow HTTP redirects (status codes 301, 302, 303, 307, 308) up to a maximum of 5 hops per image; exceeding this limit fails that image gracefully without halting conversion
+- **FR-16**: Before following any redirect, the redirect target URL must be validated: the hostname must resolve to a public IP address; redirects to private or loopback IP ranges (RFC 1918, link-local, IPv6 loopback) must be rejected to prevent SSRF attacks
+- **FR-17**: The existing per-image timeout budget covers the entire redirect chain — not each hop independently
 
 ### Response Enrichment
 
