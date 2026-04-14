@@ -28,6 +28,7 @@ import { startWatcher } from "./application/watcher.js";
 import type { WatcherLogger } from "./application/watcher.js";
 import { loadDotenv } from "./infrastructure/dotenv-loader.js";
 import { GrayMatterFrontmatterParser } from "./infrastructure/frontmatter/gray-matter-parser.js";
+import { readEpubFile } from "./infrastructure/cli/epub-reader.js";
 
 // ---------------------------------------------------------------------------
 // 0. Handle --help before loading config (no env vars needed)
@@ -38,13 +39,14 @@ const rawArgs = process.argv.slice(2);
 if (rawArgs.includes("--help")) {
   process.stderr.write(
     [
-      "paperboy watch — Watch a folder for .md files and send them to Kindle",
+      "paperboy watch — Watch a folder for .md and .epub files and send them to Kindle",
       "",
       "USAGE",
       "  paperboy watch [--help]",
       "",
-      "The watcher monitors WATCH_FOLDER for new .md files, converts each to EPUB,",
-      "and emails it to your configured Kindle device.",
+      "The watcher monitors WATCH_FOLDER for new .md and .epub files.",
+      "Markdown files are converted to EPUB; EPUB files are sent directly.",
+      "Each file is emailed to your configured Kindle device.",
       "",
       "Processed files are moved to WATCH_FOLDER/sent/.",
       "Failed files are moved to WATCH_FOLDER/error/ with an .error.txt file.",
@@ -137,6 +139,7 @@ try {
     frontmatterParser,
     watchFolder,
     readFile: (path) => readFile(path, "utf-8"),
+    readEpubFile,
     moveToSent: (fp) => fileMover.moveToSent(fp),
     moveToError: (fp, k, m) => fileMover.moveToError(fp, k, m),
     logger,

@@ -1,6 +1,6 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-13
+> Last updated: 2026-04-14
 > Last ticket code: PB-020
 
 ## Active Work
@@ -17,7 +17,6 @@
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
 | PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
-| PB-012 | Accept EPUB Files (No Transformation) | Feature | specs/main-spec.md | — | Medium |
 | PB-013 | Watcher File Logs | Feature | — | — | Low |
 | PB-014 | SonarQube CI | Feature | — | — | Medium |
 
@@ -25,6 +24,7 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-012 | Accept EPUB Files (No Transformation) | specs/main-spec.md | 2026-04-14 | — |
 | PB-019 | Image Download Compatibility (headers + redirects) | specs/PB-016-image-downloading-spec.md | 2026-04-13 | plans/done/PB-019-2026-04-13-image-download-compatibility.md |
 | PB-017 | Fix Image Embedding for Kindle EPUB | specs/main-spec.md | 2026-04-09 | plans/done/PB-017-2026-04-09-kindle-epub-image-files.md |
 | PB-016 | Online Image Downloading | specs/PB-016-image-downloading-spec.md, specs/main-spec.md | 2026-04-08 | plans/done/PB-016-2026-04-08-online-image-downloading.md |

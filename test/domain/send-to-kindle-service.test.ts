@@ -154,3 +154,78 @@ describe("SendToKindleService", () => {
     expect(logger.deliveryFailure).toHaveBeenCalledWith("Test", "conversion", "EPUB gen failed", "personal");
   });
 });
+
+describe("SendToKindleService.sendEpub", () => {
+  it("sends pre-built EPUB directly without calling converter", async () => {
+    const epub = new EpubDocument("My Book", Buffer.from("epub-bytes"));
+    const converter: ContentConverter = { toEpub: vi.fn() };
+    const mailer: DocumentMailer = {
+      send: vi.fn().mockResolvedValue(ok(undefined)),
+    };
+    const logger = fakeLogger();
+    const service = new SendToKindleService(converter, mailer, logger);
+    const device = makeDevice("personal");
+
+    const result = await service.sendEpub(epub, device);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.title).toBe("My Book");
+      expect(result.value.sizeBytes).toBe(epub.sizeBytes);
+      expect(result.value.deviceName).toBe("personal");
+    }
+    expect(converter.toEpub).not.toHaveBeenCalled();
+    expect(mailer.send).toHaveBeenCalledWith(epub, device);
+  });
+
+  it("returns delivery error without calling converter when mailer fails", async () => {
+    const epub = new EpubDocument("My Book", Buffer.from("epub-bytes"));
+    const converter: ContentConverter = { toEpub: vi.fn() };
+    const deliveryError = new DeliveryError("connection", "SMTP timeout");
+    const mailer: DocumentMailer = {
+      send: vi.fn().mockResolvedValue(err(deliveryError)),
+    };
+    const logger = fakeLogger();
+    const service = new SendToKindleService(converter, mailer, logger);
+    const device = makeDevice("personal");
+
+    const result = await service.sendEpub(epub, device);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.kind).toBe("delivery");
+    }
+    expect(converter.toEpub).not.toHaveBeenCalled();
+  });
+
+  it("logs attempt and success", async () => {
+    const epub = new EpubDocument("My Book", Buffer.from("epub-bytes"));
+    const converter: ContentConverter = { toEpub: vi.fn() };
+    const mailer: DocumentMailer = {
+      send: vi.fn().mockResolvedValue(ok(undefined)),
+    };
+    const logger = fakeLogger();
+    const service = new SendToKindleService(converter, mailer, logger);
+
+    await service.sendEpub(epub, makeDevice("personal"));
+
+    expect(logger.deliveryAttempt).toHaveBeenCalledWith("My Book", "epub", "personal");
+    expect(logger.deliverySuccess).toHaveBeenCalledWith("My Book", "epub", epub.sizeBytes, "personal");
+  });
+
+  it("logs attempt and failure when mailer fails", async () => {
+    const epub = new EpubDocument("My Book", Buffer.from("epub-bytes"));
+    const converter: ContentConverter = { toEpub: vi.fn() };
+    const deliveryError = new DeliveryError("auth", "SMTP auth failed");
+    const mailer: DocumentMailer = {
+      send: vi.fn().mockResolvedValue(err(deliveryError)),
+    };
+    const logger = fakeLogger();
+    const service = new SendToKindleService(converter, mailer, logger);
+
+    await service.sendEpub(epub, makeDevice("personal"));
+
+    expect(logger.deliveryAttempt).toHaveBeenCalledWith("My Book", "epub", "personal");
+    expect(logger.deliveryFailure).toHaveBeenCalledWith("My Book", "delivery", "SMTP auth failed", "personal");
+  });
+});

@@ -40,9 +40,10 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 ### Content Ingestion
 
 > Updated 2026-04-10 via feature: PB-018
+> Updated 2026-04-14 via feature: PB-012
 
-- **FR-1**: The system must resolve a document title that will appear as the document name in the Kindle library. The title is resolved in priority order: **(1) explicit caller-supplied title → (2) `title` field in YAML frontmatter → (3) filename stem** (for file-based inputs only; stdin and MCP have no filename fallback). See FR-27–FR-29 for frontmatter details.
-- **FR-2**: The system must accept document content (string, required) in Markdown format. When YAML frontmatter is present, it is parsed and stripped from the body before conversion (see FR-27).
+- **FR-1**: The system must resolve a document title that will appear as the document name in the Kindle library. The title is resolved in priority order: **(1) explicit caller-supplied title → (2) `title` field in YAML frontmatter (Markdown) or EPUB metadata (EPUB) → (3) filename stem** (for file-based inputs only; stdin and MCP have no filename fallback). See FR-27–FR-29 for frontmatter details.
+- **FR-2**: The system must accept document content in Markdown format, or pre-built EPUB files (`.epub` extension) which bypass conversion. When YAML frontmatter is present in Markdown, it is parsed and stripped from the body before conversion (see FR-27).
 - **FR-3**: The system must accept an optional author parameter (string) for document metadata. Default: `"Claude"`
 
 ### Frontmatter Metadata
@@ -61,6 +62,16 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 
 - **FR-29**: If a frontmatter block exists but cannot be parsed as valid YAML, the system must return a frontmatter error rather than falling back or attempting conversion.
 - **FR-30**: The `url` and `date` fields from frontmatter, when present, must be made available to the EPUB conversion pipeline as document context. They are not rendered in PB-018 (reserved for a future feature), but must not be silently dropped.
+
+### EPUB Passthrough
+
+> Added 2026-04-14 via feature: PB-012
+
+- **FR-31**: When the CLI receives a `--file` argument with a `.epub` extension, the system must send the file directly to the mailer without running the Markdown-to-EPUB conversion pipeline.
+- **FR-32**: When the watcher detects a `.epub` file in the watch folder, the system must send it directly to the mailer without conversion.
+- **FR-33**: For EPUB passthrough, the title is resolved in priority order: **(1) explicit `--title` flag → (2) `dc:title` field from EPUB metadata (OPF package document) → (3) filename stem** (minus `.epub`). All fallbacks are silent; a malformed EPUB that lacks readable metadata uses the filename stem.
+- **FR-34**: EPUB files up to 50 MB are accepted. Files exceeding 50 MB are rejected with a size error before attempting delivery.
+- **FR-35**: MCP EPUB passthrough is out of scope — the MCP tool accepts Markdown text content only; binary EPUB cannot be expressed as an MCP text parameter.
 
 ### Content Conversion
 
@@ -176,6 +187,7 @@ The system provides a CLI entry point (`paperboy`) as an alternative to the MCP 
 
 ```bash
 paperboy [--title <title>] --file <path> [--author <name>] [--device <name>]
+paperboy [--title <title>] --file <path.epub>  # sends pre-built EPUB directly
 paperboy [--title <title>]                     # reads from stdin if piped
 paperboy --help
 paperboy --version
@@ -186,7 +198,7 @@ paperboy --version
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--title <title>` | No | Title of the document. Overrides frontmatter title when both are present. If omitted, resolved from frontmatter or filename stem (see Title Resolution below). |
-| `--file <path>` | No | Path to a Markdown file; reads from stdin if omitted |
+| `--file <path>` | No | Path to a Markdown (`.md`) or pre-built EPUB (`.epub`) file; reads from stdin if omitted |
 | `--author <name>` | No | Author name embedded in the EPUB (default: configured value) |
 | `--device <name>` | No | Target Kindle device name (default: first configured device) |
 | `--help` | No | Show usage text and exit |
@@ -243,8 +255,9 @@ Install globally (`npm install -g paperboy`) or run via `npx paperboy`.
 
 > Updated 2026-03-31 via feature: PB-009
 > Updated 2026-04-10 via feature: PB-018
+> Updated 2026-04-14 via feature: PB-012
 
-The `paperboy watch` command starts a foreground watcher that monitors a configured folder for `.md` files, converts each to EPUB, and sends it to Kindle automatically.
+The `paperboy watch` command starts a foreground watcher that monitors a configured folder for `.md` and `.epub` files, converts or passes through as appropriate, and sends each to Kindle automatically.
 
 ```bash
 paperboy watch          # start the watcher
@@ -262,12 +275,12 @@ Added to the existing `.env` configuration. Optional — only required when usin
 **Folder structure (managed by the watcher):**
 
 ```
-/path/to/kindle-inbox/       # user drops .md files here
+/path/to/kindle-inbox/       # user drops .md or .epub files here
   sent/                      # auto-created, successful deliveries moved here
   error/                     # auto-created, failed deliveries + .error.txt
 ```
 
-**Processing pipeline:**
+**Processing pipeline — Markdown files (`.md`):**
 1. New `.md` file detected (chokidar with `awaitWriteFinish`)
 2. Read file; parse and strip YAML frontmatter (if present). Malformed frontmatter → move to `error/`
 3. Resolve title: frontmatter `title` → first H1 in body → filename stem
@@ -275,6 +288,13 @@ Added to the existing `.env` configuration. Optional — only required when usin
 5. On success: move to `sent/`
 6. On transient SMTP failure: retry up to 3x with exponential backoff (2s, 4s, 8s)
 7. On permanent failure or retries exhausted: move to `error/` + write `.error.txt`
+
+**Processing pipeline — EPUB files (`.epub`):**
+1. New `.epub` file detected (chokidar with `awaitWriteFinish`)
+2. Read file bytes; extract title from EPUB metadata (`dc:title`). Fallback: filename stem
+3. Call `SendToKindleService.sendEpub()` — no conversion step
+4. On success: move to `sent/`
+5. Same retry and error handling as Markdown pipeline
 
 **Error file format** (`error/<name>.error.txt`):
 ```
