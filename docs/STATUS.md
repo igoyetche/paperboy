@@ -8,6 +8,7 @@
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|---|---|---|---|
 | PB-018 | Markdown Frontmatter Metadata | 🔄 In Progress | specs/main-spec.md | plans/active/PB-018-markdown-frontmatter-metadata.md | Medium |
+| PB-014 | SonarQube CI Workflow | 🔄 In Progress | CLAUDE.md | plans/active/PB-014-sonarqube-ci.md | High |
 
 ## Backlog
 
@@ -18,7 +19,6 @@
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
 | PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
 | PB-013 | Watcher File Logs | Feature | — | — | Low |
-| PB-014 | SonarQube CI | Feature | — | — | Medium |
 
 ## Completed
 
