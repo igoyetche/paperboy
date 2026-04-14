@@ -12,9 +12,10 @@ import type { Readable } from "node:stream";
 import type { DomainError } from "../domain/errors.js";
 import type { DeliverySuccess, SendToKindleService } from "../domain/send-to-kindle-service.js";
 import type { DeviceRegistry } from "../domain/device-registry.js";
-import { Author, MarkdownContent, MarkdownDocument } from "../domain/values/index.js";
+import { Author, EpubDocument, MarkdownContent, MarkdownDocument } from "../domain/values/index.js";
 import type { FrontmatterParser } from "../domain/ports.js";
 import { resolveTitle } from "../domain/title-resolver.js";
+import type { EpubReadResult } from "../infrastructure/cli/epub-reader.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -284,7 +285,7 @@ FLAGS
   --title <title>     Title of the document. Overrides frontmatter title when both are present.
                       If omitted, resolved from: (1) frontmatter title, (2) filename stem (file only),
                       or (3) hard error if unresolvable.
-  --file  <path>      Path to a Markdown file; reads from stdin if omitted
+  --file  <path>      Path to a Markdown (.md) or pre-built EPUB (.epub) file; reads from stdin if omitted
   --author <name>     Author name embedded in the EPUB (default: configured value)
   --device <name>     Target Kindle device name (default: first configured device)
   --help              Show this help text and exit
@@ -310,6 +311,8 @@ EXIT CODES
 EXAMPLES
   paperboy --title "My Article" --file article.md
   paperboy --file article.md                      # uses title from article.md or filename
+  paperboy --file book.epub                       # sends pre-built EPUB, title from metadata
+  paperboy --title "My Book" --file book.epub     # overrides EPUB metadata title
   cat article.md | paperboy --title "My Article"
   paperboy --title "Notes" --file notes.md --author "Alice" --device "Alice's Kindle"
 `.trimStart();
@@ -327,7 +330,7 @@ EXAMPLES
  * Implements FR-CLI-4
  */
 export interface CliDeps {
-  readonly service: Pick<SendToKindleService, "execute">;
+  readonly service: Pick<SendToKindleService, "execute" | "sendEpub">;
   readonly devices: DeviceRegistry;
   readonly defaultAuthor: string;
   readonly frontmatterParser: FrontmatterParser;
@@ -335,6 +338,7 @@ export interface CliDeps {
   readonly isTTY: boolean;
   readonly readFromFile: (path: string) => Promise<string>;
   readonly readFromStdin: (stream: Readable) => Promise<string>;
+  readonly readEpubFile: (path: string) => Promise<EpubReadResult>;
   readonly stdin: Readable;
   readonly stderr: (message: string) => void;
   readonly version: string;
@@ -387,7 +391,48 @@ export async function run(deps: CliDeps): Promise<number> {
     return 1;
   }
 
-  // Step 7: Read content
+  // Step 7a: EPUB passthrough — detect .epub extension and short-circuit
+  if (source.kind === "file" && source.path.toLowerCase().endsWith(".epub")) {
+    let epubResult: EpubReadResult;
+    try {
+      epubResult = await deps.readEpubFile(source.path);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to read EPUB file.";
+      deps.stderr(formatError(message));
+      return 1;
+    }
+
+    const titleResult = resolveTitle([args.title || undefined, epubResult.suggestedTitle]);
+    if (!titleResult.ok) {
+      deps.stderr(formatError(titleResult.error.message));
+      return 1;
+    }
+
+    const authorRaw = args.author?.trim() ?? deps.defaultAuthor;
+    const authorResult = Author.create(authorRaw);
+    if (!authorResult.ok) {
+      deps.stderr(formatError(authorResult.error.message));
+      return 1;
+    }
+
+    const deviceResult = deps.devices.resolve(args.device);
+    if (!deviceResult.ok) {
+      deps.stderr(formatError(deviceResult.error.message));
+      return 1;
+    }
+
+    const epub = new EpubDocument(titleResult.value.value, epubResult.buffer);
+    const result = await deps.service.sendEpub(epub, deviceResult.value);
+    if (!result.ok) {
+      deps.stderr(formatError(result.error.message));
+      return mapErrorToExitCode(result.error);
+    }
+
+    deps.stderr(formatSuccess(result.value));
+    return 0;
+  }
+
+  // Step 7: Read content (Markdown path)
   let rawContent: string;
   try {
     if (source.kind === "file") {
