@@ -1,6 +1,6 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-14
+> Last updated: 2026-04-15
 > Last ticket code: PB-020
 
 ## Active Work
@@ -18,12 +18,12 @@
 | PB-007 | Interactive Setup Wizard | Feature | specs/main-spec.md | — | High |
 | PB-008 | EPUB Cover Generation | Feature | specs/main-spec.md | — | Medium |
 | PB-013 | Watcher File Logs | Feature | — | — | Low |
-| PB-014 | SonarQube CI | Feature | — | — | Medium |
 
 ## Completed
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-014 | SonarQube CI Workflow | CLAUDE.md | 2026-04-15 | plans/done/PB-014-2026-04-15-sonarqube-ci.md |
 | PB-012 | Accept EPUB Files (No Transformation) | specs/main-spec.md | 2026-04-14 | — |
 | PB-019 | Image Download Compatibility (headers + redirects) | specs/PB-016-image-downloading-spec.md | 2026-04-13 | plans/done/PB-019-2026-04-13-image-download-compatibility.md |
 | PB-017 | Fix Image Embedding for Kindle EPUB | specs/main-spec.md | 2026-04-09 | plans/done/PB-017-2026-04-09-kindle-epub-image-files.md |
