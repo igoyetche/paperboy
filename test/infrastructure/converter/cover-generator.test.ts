@@ -97,3 +97,47 @@ describe("CoverGenerator.generateHtmlChapter", () => {
     expect(html).toContain("data:image/png;base64,");
   });
 });
+
+describe("CoverGenerator.generateImage", () => {
+  const generator = new CoverGenerator();
+
+  it("returns a Buffer with JPEG magic bytes (FF D8 FF)", async () => {
+    const buffer = await generator.generateImage("My Title", "Claude");
+    expect(buffer).toBeInstanceOf(Buffer);
+    expect(buffer[0]).toBe(0xff);
+    expect(buffer[1]).toBe(0xd8);
+    expect(buffer[2]).toBe(0xff);
+  });
+
+  it("returns a non-empty buffer for a short title", async () => {
+    const buffer = await generator.generateImage("Hi", "Author");
+    expect(buffer.length).toBeGreaterThan(1000);
+  });
+
+  it("handles a title longer than 30 characters without throwing", async () => {
+    const buffer = await generator.generateImage(
+      "This is a very long title that exceeds thirty characters and needs wrapping",
+      "Author",
+    );
+    expect(buffer[0]).toBe(0xff);
+    expect(buffer[1]).toBe(0xd8);
+  });
+
+  it("handles a title needing more than 3 lines without throwing", async () => {
+    const buffer = await generator.generateImage(
+      "Chapter One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve",
+      "Some Author Name",
+    );
+    expect(buffer[0]).toBe(0xff);
+    expect(buffer[1]).toBe(0xd8);
+  });
+
+  it("escapes XML special characters in title and author without throwing", async () => {
+    const buffer = await generator.generateImage(
+      "Title & <Subtitle>",
+      'Author "Quoted"',
+    );
+    expect(buffer[0]).toBe(0xff);
+    expect(buffer[1]).toBe(0xd8);
+  });
+});
