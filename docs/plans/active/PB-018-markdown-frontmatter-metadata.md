@@ -132,16 +132,20 @@ Parse YAML frontmatter from Markdown files, make `title` optional across all ent
 
 ### Phase 7 — Composition roots
 
-- [ ] **T-30**: Update `src/index.ts` (MCP root): instantiate `GrayMatterFrontmatterParser` and inject into `ToolHandler`.
-- [ ] **T-31**: Update `src/cli-entry.ts` (CLI root): instantiate `GrayMatterFrontmatterParser` and inject into `CliDeps`.
-- [ ] **T-32**: Update `src/watch-entry.ts` (Watcher root): instantiate `GrayMatterFrontmatterParser` and inject into watcher deps.
+- [x] **T-30**: Update `src/index.ts` (MCP root): instantiate `GrayMatterFrontmatterParser` and inject into `ToolHandler`.
+  (2026-04-16)
+- [x] **T-31**: Update `src/cli-entry.ts` (CLI root): instantiate `GrayMatterFrontmatterParser` and inject into `CliDeps`.
+  (2026-04-16)
+- [x] **T-32**: Update `src/watch-entry.ts` (Watcher root): instantiate `GrayMatterFrontmatterParser` and inject into watcher deps.
+  (2026-04-16)
 
 ### Phase 8 — Validation
 
-- [ ] **T-33**: Run full test suite — `npm test` must pass with zero failures and zero TypeScript errors (`npm run build`).
-- [ ] **T-34**: Manual smoke test — run `paperboy --file <paperclip-file.md>` with a real Paperclip-exported file (with frontmatter). Verify: title is extracted from metadata, frontmatter does not appear in rendered EPUB, delivery succeeds.
-- [ ] **T-35**: Manual regression test — run `paperboy --title "Test" --file <no-frontmatter.md>`. Verify unchanged behavior.
-- [ ] **T-36**: Manual watcher test — drop a Paperclip file into the watch folder. Verify metadata title appears in Kindle library.
+- [x] **T-33**: Run full test suite — `npm test` must pass with zero failures and zero TypeScript errors (`npm run build`).
+  **Result: 271 tests passing, 3 skipped. TypeScript: zero errors.** (2026-04-16)
+- [~] **T-34**: Manual smoke test — run `paperboy --file <paperclip-file.md>` with a real Paperclip-exported file (with frontmatter). Verify: title is extracted from metadata, frontmatter does not appear in rendered EPUB, delivery succeeds.
+- [~] **T-35**: Manual regression test — run `paperboy --title "Test" --file <no-frontmatter.md>`. Verify unchanged behavior.
+- [~] **T-36**: Manual watcher test — drop a Paperclip file into the watch folder. Verify metadata title appears in Kindle library.
 
 ---
 
@@ -164,13 +168,13 @@ T-33 → T-34..T-36 (manual tests after automated pass)
 
 ## Acceptance Criteria Checklist (from feature doc)
 
-- [ ] Markdown files with metadata are parsed and metadata is available to the pipeline
-- [ ] CLI `--title` optional with `--file` (frontmatter → filename fallback)
-- [ ] CLI `--title` optional with stdin (frontmatter → hard error)
-- [ ] MCP `title` parameter optional (frontmatter → hard error)
-- [ ] Explicit title always overrides metadata title
-- [ ] Files without frontmatter continue to work unchanged
-- [ ] Frontmatter stripped from rendered EPUB
-- [ ] Watcher auto-uses metadata title (no user changes required)
-- [ ] Unresolvable title → clear validation error (CLI exit 1, MCP error response)
-- [ ] Tests pass, TypeScript strict mode, zero errors
+- [x] Markdown files with metadata are parsed and metadata is available to the pipeline
+- [x] CLI `--title` optional with `--file` (frontmatter → filename fallback)
+- [x] CLI `--title` optional with stdin (frontmatter → hard error)
+- [x] MCP `title` parameter optional (frontmatter → hard error)
+- [x] Explicit title always overrides metadata title
+- [x] Files without frontmatter continue to work unchanged
+- [x] Frontmatter stripped from rendered EPUB
+- [x] Watcher auto-uses metadata title (no user changes required)
+- [x] Unresolvable title → clear validation error (CLI exit 1, MCP error response)
+- [x] Tests pass, TypeScript strict mode, zero errors
