@@ -89,20 +89,25 @@ Parse YAML frontmatter from Markdown files, make `title` optional across all ent
 
 ### Phase 5 — MCP adapter
 
-- [ ] **T-22**: Update `ToolHandler.handle()` in `src/application/tool-handler.ts`:
-  - Change `args.title` from required `string` to optional `string | undefined`
-  - After `MarkdownContent.create(args.content)` step: call `frontmatterParser.parse(args.content)` → metadata + body
-  - On `FrontmatterError`: return `mapErrorToResponse(error)`
-  - Resolve title from `[args.title, metadata.title]` via `resolveTitle`
-  - Build `MarkdownDocument.fromParts(content, metadata)` and call service
-- [ ] **T-23**: Update `ToolHandler` constructor: add `frontmatterParser: FrontmatterParser` parameter.
-- [ ] **T-24**: Update `mapErrorToResponse()`: add `case "frontmatter": errorCode = "FRONTMATTER_ERROR"`.
-- [ ] **T-25**: Update MCP tool schema registration in `src/index.ts`: make `title` optional (no `required` array entry or mark as not required). Update tool description to mention frontmatter fallback.
-- [ ] **T-26**: Write/update MCP unit tests:
-  - `title` omitted + frontmatter present → metadata title
-  - `title` provided + frontmatter present → explicit wins
-  - `title` omitted + no frontmatter → validation error response
-  - Malformed frontmatter → `FRONTMATTER_ERROR` response
+- [x] **T-22**: Update `ToolHandler.handle()` in `src/application/tool-handler.ts`:
+  - Change `args.title` from required `string` to optional `string | undefined` ✓
+  - After `MarkdownContent.create(args.content)` step: call `frontmatterParser.parse(args.content)` → metadata + body ✓
+  - On `FrontmatterError`: return `mapErrorToResponse(error)` ✓
+  - Resolve title from `[args.title, metadata.title]` via `resolveTitle` ✓
+  - Build `MarkdownDocument.fromParts(content, metadata)` and call service ✓
+  (2026-04-16)
+- [x] **T-23**: Update `ToolHandler` constructor: add `frontmatterParser: FrontmatterParser` parameter.
+  (2026-04-16)
+- [x] **T-24**: Update `mapErrorToResponse()`: add `case "frontmatter": errorCode = "FRONTMATTER_ERROR"`.
+  (2026-04-16)
+- [x] **T-25**: Update MCP tool schema registration in `src/index.ts`: make `title` optional (no `required` array entry or mark as not required). Update tool description to mention frontmatter fallback.
+  (2026-04-16)
+- [x] **T-26**: Write/update MCP unit tests:
+  - `title` omitted + frontmatter present → metadata title ✓
+  - `title` provided + frontmatter present → explicit wins ✓
+  - `title` omitted + no frontmatter → validation error response ✓
+  - Malformed frontmatter → `FRONTMATTER_ERROR` response ✓
+  (2026-04-16)
 
 ### Phase 6 — Watcher adapter
 
