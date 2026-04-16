@@ -1,5 +1,5 @@
 /**
- * CoverGenerator — Implements FR-1, FR-2 (PB-008)
+ * CoverGenerator — Implements FR-1, FR-37 (PB-008)
  *
  * Generates an HTML first-page chapter and a JPEG cover image for EPUB documents.
  * The HTML chapter is styled for Kindle rendering; the JPEG cover is used as the
@@ -49,7 +49,7 @@ function extractDomain(url: string): string | undefined {
  *
  * A single word longer than `maxLineChars` is returned as-is on its own line.
  *
- * Implements FR-1 (PB-008): title wrapping for the cover image.
+ * Implements FR-36 (PB-008): title wrapping for the cover image.
  */
 export function wrapTitle(
   title: string,
@@ -59,9 +59,9 @@ export function wrapTitle(
   const words = title.split(" ");
   const lines: string[] = [];
   let current = "";
-  // Set to true once we push the (maxLines-1)th line, meaning any further
-  // content belongs on the final allowed line and should end with "…".
-  let onLastLine = false;
+  // Set to true when we break early because a word doesn't fit on the last line.
+  // This indicates content was truncated and "…" should be appended.
+  let wasOverflowed = false;
 
   for (const word of words) {
     if (current.length === 0) {
@@ -71,33 +71,27 @@ export function wrapTitle(
     } else {
       if (lines.length >= maxLines - 1) {
         // A word doesn't fit and we're already on the last allowed line —
-        // truncate current and stop.
+        // truncate current and mark overflow.
         const withEllipsis = current + "…";
         current =
           withEllipsis.length <= maxLineChars
             ? withEllipsis
             : current.slice(0, maxLineChars - 1) + "…";
+        wasOverflowed = true;
         break;
       }
+      // Word doesn't fit on current line, but we have room for another line.
       lines.push(current);
-      if (lines.length >= maxLines - 1) {
-        // We just filled the penultimate line; the next line is the last.
-        onLastLine = true;
-      }
       current = word;
     }
   }
 
-  if (current.length > 0 && lines.length < maxLines) {
-    if (onLastLine) {
-      // We reached the last allowed line because there were ≥ maxLines worth of
-      // content — append "…" to signal the title was truncated.
-      const withEllipsis = current + "…";
-      current =
-        withEllipsis.length <= maxLineChars
-          ? withEllipsis
-          : current.slice(0, maxLineChars - 1) + "…";
-    }
+  // If we didn't break early due to overflow and have remaining content,
+  // push it (whether or not we're on the last line).
+  if (current.length > 0 && lines.length < maxLines && !wasOverflowed) {
+    lines.push(current);
+  } else if (current.length > 0 && wasOverflowed) {
+    // Overflow case: current already has "…", just push it.
     lines.push(current);
   }
 
@@ -113,7 +107,7 @@ export function wrapTitle(
  *  - `generateHtmlChapter`: styled XHTML first chapter (title page) for Kindle rendering
  *  - `generateImage`: 600×900 JPEG cover image for the Kindle library thumbnail
  *
- * Implements FR-1, FR-2 (PB-008).
+ * Implements FR-1, FR-37 (PB-008).
  */
 export class CoverGenerator {
   private readonly iconBase64: string;
@@ -128,7 +122,7 @@ export class CoverGenerator {
    * Generates a styled XHTML cover chapter with title, author, and optional source domain.
    * CSS is inlined because Kindle does not reliably load external stylesheets.
    *
-   * Implements FR-1 (PB-008).
+   * Implements FR-36 (PB-008).
    */
   generateHtmlChapter(
     title: string,
@@ -174,7 +168,7 @@ export class CoverGenerator {
    * Generates a 600×900 JPEG cover image for the Kindle library thumbnail.
    * SVG is rasterised to JPEG via sharp.
    *
-   * Implements FR-2 (PB-008).
+   * Implements FR-37 (PB-008).
    */
   async generateImage(title: string, author: string): Promise<Buffer> {
     const iconDataUri = `data:image/png;base64,${this.iconBase64}`;

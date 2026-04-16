@@ -18,13 +18,23 @@ describe("wrapTitle", () => {
     lines.forEach((line) => expect(line.length).toBeLessThanOrEqual(30));
   });
 
-  it("appends ellipsis when all available lines are consumed by wrapping", () => {
-    const veryLong =
-      "This is an extremely long title that would need four or more lines to display";
-    const lines = wrapTitle(veryLong);
+  it("appends ellipsis when content doesn't fit in maxLines", () => {
+    // This title needs more than 3 lines with 30-char limit
+    const tooLong =
+      "One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen";
+    const lines = wrapTitle(tooLong);
     expect(lines.length).toBeLessThanOrEqual(3);
     const lastLine = lines[lines.length - 1] ?? "";
     expect(lastLine.endsWith("…")).toBe(true);
+  });
+
+  it("does NOT append ellipsis when all words fit in maxLines", () => {
+    // This title fits exactly in 3 lines without overflow
+    const fitsExactly = "Short line Short line Short";
+    const lines = wrapTitle(fitsExactly);
+    expect(lines.length).toBeLessThanOrEqual(3);
+    const lastLine = lines[lines.length - 1] ?? "";
+    expect(lastLine.endsWith("…")).toBe(false);
   });
 
   it("returns a single line even if it exceeds 30 chars (single long word)", () => {
