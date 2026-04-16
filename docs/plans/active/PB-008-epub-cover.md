@@ -923,7 +923,7 @@ git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover commit -m "
 
 All three files currently construct `MarkdownEpubConverter` with only `imageProcessor`. This task adds `coverGenerator` to each.
 
-- [ ] **Step 5.1: Update `src/index.ts`**
+- [x] **Step 5.1: Update `src/index.ts`** (2026-04-16)
 
 Add the import and wiring. The change is two lines — one import, one instantiation, one constructor update.
 
@@ -946,7 +946,7 @@ const coverGenerator = new CoverGenerator();
 const converter = new MarkdownEpubConverter(imageProcessor, coverGenerator);
 ```
 
-- [ ] **Step 5.2: Update `src/cli-entry.ts`**
+- [x] **Step 5.2: Update `src/cli-entry.ts`** (2026-04-16)
 
 Add the import after the existing `ImageProcessor` import:
 
@@ -967,7 +967,7 @@ const coverGenerator = new CoverGenerator();
 const converter = new MarkdownEpubConverter(imageProcessor, coverGenerator);
 ```
 
-- [ ] **Step 5.3: Update `src/watch-entry.ts`**
+- [x] **Step 5.3: Update `src/watch-entry.ts`** (2026-04-16)
 
 Add the import after the existing `ImageProcessor` import:
 
@@ -988,7 +988,7 @@ const coverGenerator = new CoverGenerator();
 const converter = new MarkdownEpubConverter(imageProcessor, coverGenerator);
 ```
 
-- [ ] **Step 5.4: Build to verify TypeScript compiles cleanly**
+- [x] **Step 5.4: Build to verify TypeScript compiles cleanly** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm run build 2>&1 | tail -10
@@ -996,7 +996,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm run buil
 
 Expected: `tsc` exits with no errors and no output.
 
-- [ ] **Step 5.5: Run the full test suite**
+- [x] **Step 5.5: Run the full test suite** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&1 | tail -10
@@ -1004,7 +1004,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&
 
 Expected: All tests pass (293 original + new cover-generator tests).
 
-- [ ] **Step 5.6: Commit**
+- [x] **Step 5.6: Commit** (2026-04-16)
 
 ```bash
 git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover add src/index.ts src/cli-entry.ts src/watch-entry.ts
@@ -1020,7 +1020,7 @@ git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover commit -m "
 - Modify: `docs/STATUS.md`
 - Modify: `docs/CHANGELOG.md`
 
-- [ ] **Step 6.1: Update `docs/specs/main-spec.md`**
+- [x] **Step 6.1: Update `docs/specs/main-spec.md`** (2026-04-16)
 
 In the **Content Conversion** section, replace the current FR-5:
 
@@ -1038,7 +1038,7 @@ With:
 
 Add `> Updated 2026-04-15 via feature: PB-008` above the Content Conversion heading.
 
-- [ ] **Step 6.2: Update `docs/STATUS.md`**
+- [x] **Step 6.2: Update `docs/STATUS.md`** (2026-04-16)
 
 Move PB-008 from the **Backlog** table to the **Active Work** table:
 
@@ -1054,7 +1054,7 @@ Add to Active Work:
 
 Update `Last updated` date to `2026-04-15`.
 
-- [ ] **Step 6.3: Update `docs/CHANGELOG.md`**
+- [x] **Step 6.3: Update `docs/CHANGELOG.md`** (2026-04-16)
 
 Prepend a new entry:
 
@@ -1068,7 +1068,7 @@ Prepend a new entry:
 **Added:** FR-37 — Cover HTML chapter as first page of document. Displays paperboy icon, title, author, and source domain (from frontmatter `url`, hostname only). Source domain appears only in the chapter, not on the thumbnail.
 ```
 
-- [ ] **Step 6.4: Run tests to confirm nothing is broken**
+- [x] **Step 6.4: Run tests to confirm nothing is broken** (2026-04-16)
 
 ```bash
 cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&1 | tail -10
@@ -1076,7 +1076,7 @@ cd /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover && npm test 2>&
 
 Expected: All tests pass.
 
-- [ ] **Step 6.5: Commit**
+- [x] **Step 6.5: Commit** (2026-04-16)
 
 ```bash
 git -C /c/projects/experiments/paperboy/.worktrees/pb-008-epub-cover add docs/specs/main-spec.md docs/STATUS.md docs/CHANGELOG.md
