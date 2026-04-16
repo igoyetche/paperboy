@@ -111,21 +111,24 @@ Parse YAML frontmatter from Markdown files, make `title` optional across all ent
 
 ### Phase 6 — Watcher adapter
 
-- [ ] **T-27**: Update `processFile()` in `src/application/watcher.ts`:
-  - Remove import of `extractTitle` (deleted in T-08)
-  - After reading file content: call `frontmatterParser.parse(raw)` → `{ metadata, body }` or `FrontmatterError`
-  - On `FrontmatterError`: `moveToError(filePath, "frontmatter", error.message)` and return
-  - Resolve title from `[metadata.title, findFirstH1(body), filenameStem]` via `resolveTitle`
-  - Use stripped `body` for `MarkdownContent.create()` rather than raw content
-  - Build `MarkdownDocument.fromParts(content, metadata)` and call service
-- [ ] **T-28**: Update `WatcherDeps` interface: add `frontmatterParser: FrontmatterParser`.
-- [ ] **T-29**: Write/update watcher unit tests:
-  - File with frontmatter → metadata title used
-  - File with only H1, no frontmatter → H1 used (regression check)
-  - File with neither → filename stem used (regression check)
-  - File with frontmatter AND H1 → metadata wins
-  - File with malformed frontmatter → moved to `error/` with `frontmatter` kind
-  - Frontmatter body stripped before MarkdownContent validation
+- [x] **T-27**: Update `processFile()` in `src/application/watcher.ts`:
+  - Remove import of `extractTitle` (deleted in T-08) ✓
+  - After reading file content: call `frontmatterParser.parse(raw)` → `{ metadata, body }` or `FrontmatterError` ✓
+  - On `FrontmatterError`: `moveToError(filePath, "frontmatter", error.message)` and return ✓
+  - Resolve title from `[metadata.title, findFirstH1(body), filenameStem]` via `resolveTitle` ✓
+  - Use stripped `body` for `MarkdownContent.create()` rather than raw content ✓
+  - Build `MarkdownDocument.fromParts(content, metadata)` and call service ✓
+  (2026-04-16)
+- [x] **T-28**: Update `WatcherDeps` interface: add `frontmatterParser: FrontmatterParser`.
+  (2026-04-16)
+- [x] **T-29**: Write/update watcher unit tests:
+  - File with frontmatter → metadata title used ✓
+  - File with only H1, no frontmatter → H1 used (regression check) ✓
+  - File with neither → filename stem used (regression check) ✓
+  - File with frontmatter AND H1 → metadata wins ✓
+  - File with malformed frontmatter → moved to `error/` with `frontmatter` kind ✓
+  - Frontmatter body stripped before MarkdownContent validation ✓
+  (2026-04-16)
 
 ### Phase 7 — Composition roots
 
