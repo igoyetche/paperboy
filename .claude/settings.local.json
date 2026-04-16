@@ -27,8 +27,13 @@
       "Bash(node:*)",
       "Bash(ls:*)",
       "Bash(gh pr:*)",
-      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)"
-    ]
+      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)",
+      "Bash(where sonar-scanner *)",
+      "Bash(npx sonar-scanner *)",
+      "Bash(sonar *)",
+      "Bash(tee sonar-secrets-output.txt)"
+    ],
+    "defaultMode": "acceptEdits"
   },
   "hooks": {
     "PostToolUse": [
