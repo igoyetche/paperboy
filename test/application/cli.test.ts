@@ -397,9 +397,10 @@ function makeRunRegistry(...names: string[]): DeviceRegistry {
 
 function fakeRunService(
   result = ok({ title: "Test", sizeBytes: 1024, deviceName: "personal" }),
-): Pick<SendToKindleService, "execute"> {
+): Pick<SendToKindleService, "execute" | "sendEpub"> {
   return {
     execute: vi.fn().mockResolvedValue(result),
+    sendEpub: vi.fn().mockResolvedValue(result),
   };
 }
 
@@ -426,6 +427,10 @@ function makeDeps(overrides?: Partial<CliDeps>): CliDeps {
     isTTY: true,
     readFromFile: vi.fn().mockResolvedValue("# Hello"),
     readFromStdin: vi.fn().mockResolvedValue("# Hello"),
+    readEpubFile: vi.fn().mockResolvedValue({
+      buffer: Buffer.from("epub-bytes"),
+      suggestedTitle: "Book From Metadata",
+    }),
     stdin: Readable.from([]),
     stderr: vi.fn(),
     version: "1.0.0",
@@ -847,6 +852,115 @@ describe("run", () => {
       const calls = stderr.mock.calls.map((c) => c[0] as string);
       const combined = calls.join("\n");
       expect(combined).toMatch(/error|invalid|frontmatter/i);
+    });
+  });
+
+  describe("PB-012: EPUB passthrough", () => {
+    it("calls sendEpub (not execute) when --file has .epub extension", async () => {
+      const service = fakeRunService(ok({ title: "My Book", sizeBytes: 2048, deviceName: "personal" }));
+      const deps = makeDeps({
+        service,
+        argv: ["--file", "book.epub"],
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.sendEpub).toHaveBeenCalledTimes(1);
+      expect(service.execute).not.toHaveBeenCalled();
+    });
+
+    it("uses explicit --title over metadata suggestedTitle for EPUB", async () => {
+      const service = fakeRunService(ok({ title: "Override Title", sizeBytes: 1024, deviceName: "personal" }));
+      const deps = makeDeps({
+        service,
+        argv: ["--title", "Override Title", "--file", "book.epub"],
+        readEpubFile: vi.fn().mockResolvedValue({
+          buffer: Buffer.from("epub"),
+          suggestedTitle: "Metadata Title",
+        }),
+      });
+
+      await run(deps);
+
+      expect(service.sendEpub).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Override Title" }),
+        expect.anything(),
+      );
+    });
+
+    it("uses suggestedTitle from EPUB metadata when --title is not provided", async () => {
+      const service = fakeRunService(ok({ title: "Book From Metadata", sizeBytes: 1024, deviceName: "personal" }));
+      const deps = makeDeps({
+        service,
+        argv: ["--file", "book.epub"],
+        readEpubFile: vi.fn().mockResolvedValue({
+          buffer: Buffer.from("epub"),
+          suggestedTitle: "Book From Metadata",
+        }),
+      });
+
+      await run(deps);
+
+      expect(service.sendEpub).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Book From Metadata" }),
+        expect.anything(),
+      );
+    });
+
+    it("returns 1 and writes error message when readEpubFile throws", async () => {
+      const stderr = vi.fn();
+      const deps = makeDeps({
+        argv: ["--file", "corrupt.epub"],
+        readEpubFile: vi.fn().mockRejectedValue(new Error("EPUB file is too large")),
+        stderr,
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(1);
+      const combined = (stderr.mock.calls as string[][]).map((c) => c[0]).join("\n");
+      expect(combined).toContain("EPUB file is too large");
+    });
+
+    it("returns 3 when sendEpub returns delivery error", async () => {
+      const service = fakeRunService(err(new DeliveryError("auth", "SMTP auth failed")));
+      const deps = makeDeps({
+        service,
+        argv: ["--file", "book.epub"],
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(3);
+    });
+
+    it("treats .epub extension case-insensitively", async () => {
+      const service = fakeRunService(ok({ title: "My Book", sizeBytes: 1024, deviceName: "personal" }));
+      const deps = makeDeps({
+        service,
+        argv: ["--file", "book.EPUB"],
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.sendEpub).toHaveBeenCalledTimes(1);
+      expect(service.execute).not.toHaveBeenCalled();
+    });
+
+    it("still routes .md files through execute (not sendEpub)", async () => {
+      const service = fakeRunService(ok({ title: "Article", sizeBytes: 512, deviceName: "personal" }));
+      const deps = makeDeps({
+        service,
+        argv: ["--title", "Article", "--file", "notes.md"],
+      });
+
+      const code = await run(deps);
+
+      expect(code).toBe(0);
+      expect(service.execute).toHaveBeenCalledTimes(1);
+      expect(service.sendEpub).not.toHaveBeenCalled();
     });
   });
 });

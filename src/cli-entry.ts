@@ -21,6 +21,7 @@ import { ImageProcessor } from "./infrastructure/converter/image-processor.js";
 import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { readFromFile, readFromStdin } from "./infrastructure/cli/content-reader.js";
+import { readEpubFile } from "./infrastructure/cli/epub-reader.js";
 import { run, getUsageText } from "./application/cli.js";
 import { loadDotenv } from "./infrastructure/dotenv-loader.js";
 import { GrayMatterFrontmatterParser } from "./infrastructure/frontmatter/gray-matter-parser.js";
@@ -110,6 +111,7 @@ async function main(): Promise<void> {
       isTTY,
       readFromFile,
       readFromStdin,
+      readEpubFile,
       stdin: process.stdin,
       stderr: (msg: string) => process.stderr.write(msg + "\n"),
       version,

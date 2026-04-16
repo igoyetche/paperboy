@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { processFile, startWatcher } from "../../src/application/watcher.js";
+import { processFile, processEpubFile, startWatcher } from "../../src/application/watcher.js";
 import type { WatcherDeps, StartWatcherDeps } from "../../src/application/watcher.js";
 import {
   ConversionError,
@@ -71,12 +71,17 @@ function makeDeps(overrides: Partial<WatcherDeps> = {}): WatcherDeps {
   return {
     service: {
       execute: vi.fn().mockResolvedValue(ok(successResult)),
+      sendEpub: vi.fn().mockResolvedValue(ok(successResult)),
     },
     devices: makeRegistry(),
     defaultAuthor: makeAuthor(),
     frontmatterParser: fakeFrontmatterParser(),
     watchFolder: "/watch",
     readFile: vi.fn().mockResolvedValue("# My Article\n\nContent here."),
+    readEpubFile: vi.fn().mockResolvedValue({
+      buffer: Buffer.from("epub-bytes"),
+      suggestedTitle: "My EPUB Book",
+    }),
     moveToSent: vi.fn().mockResolvedValue("/watch/sent/my-article.md"),
     moveToError: vi.fn().mockResolvedValue("/watch/error/my-article.md"),
     logger: makeLogger(),
@@ -534,6 +539,154 @@ describe("processFile", () => {
 });
 
 // ---------------------------------------------------------------------------
+// processEpubFile tests
+// ---------------------------------------------------------------------------
+
+describe("processEpubFile", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("success path", () => {
+    it("reads EPUB, sends via sendEpub, moves to sent", async () => {
+      const deps = makeDeps();
+
+      const promise = processEpubFile("/inbox/book.epub", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.readEpubFile).toHaveBeenCalledWith("/inbox/book.epub");
+      expect(deps.service.sendEpub).toHaveBeenCalledTimes(1);
+      expect(deps.moveToSent).toHaveBeenCalledWith("/inbox/book.epub");
+      expect(deps.moveToError).not.toHaveBeenCalled();
+      expect(deps.service.execute).not.toHaveBeenCalled();
+    });
+
+    it("logs processing start and sent message", async () => {
+      const deps = makeDeps();
+
+      const promise = processEpubFile("/inbox/my-book.epub", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining("Processing my-book.epub"),
+      );
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining("Sent my-book.epub"),
+      );
+    });
+
+    it("uses title from EPUB metadata (suggestedTitle)", async () => {
+      const deps = makeDeps({
+        readEpubFile: vi.fn().mockResolvedValue({
+          buffer: Buffer.from("epub"),
+          suggestedTitle: "Clean Architecture",
+        }),
+      });
+
+      const promise = processEpubFile("/inbox/book.epub", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.sendEpub).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Clean Architecture" }),
+        expect.anything(),
+      );
+    });
+  });
+
+  describe("EPUB read error", () => {
+    it("logs a warning and does not move file when readEpubFile throws", async () => {
+      const deps = makeDeps({
+        readEpubFile: vi.fn().mockRejectedValue(new Error("file too large")),
+      });
+
+      const promise = processEpubFile("/inbox/big.epub", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.sendEpub).not.toHaveBeenCalled();
+      expect(deps.moveToSent).not.toHaveBeenCalled();
+      expect(deps.moveToError).not.toHaveBeenCalled();
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("file too large"),
+      );
+    });
+  });
+
+  describe("device not configured", () => {
+    it("moves to error when device resolution fails", async () => {
+      const { ValidationError, err } = await import("../../src/domain/errors.js");
+      const fakeDevices = {
+        resolve: vi.fn().mockReturnValue(err(new ValidationError("device", "No devices configured"))),
+        defaultDevice: undefined,
+      } as unknown as DeviceRegistry;
+      const deps = makeDeps({ devices: fakeDevices });
+
+      const promise = processEpubFile("/inbox/book.epub", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.service.sendEpub).not.toHaveBeenCalled();
+      expect(deps.moveToError).toHaveBeenCalledWith(
+        "/inbox/book.epub",
+        "validation",
+        expect.any(String),
+      );
+    });
+  });
+
+  describe("delivery failure", () => {
+    it("moves to error on permanent delivery error", async () => {
+      const deps = makeDeps({
+        service: {
+          execute: vi.fn(),
+          sendEpub: vi.fn().mockResolvedValue(err(new DeliveryError("auth", "SMTP auth failed"))),
+        },
+      });
+
+      const promise = processEpubFile("/inbox/book.epub", deps);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      expect(deps.moveToError).toHaveBeenCalledWith(
+        "/inbox/book.epub",
+        "delivery",
+        "SMTP auth failed",
+      );
+      expect(deps.moveToSent).not.toHaveBeenCalled();
+    });
+
+    it("retries on transient delivery error then succeeds", async () => {
+      const successResult: DeliverySuccess = {
+        title: "My EPUB Book",
+        sizeBytes: 2048,
+        deviceName: "personal",
+      };
+      const sendEpub = vi
+        .fn()
+        .mockResolvedValueOnce(err(new DeliveryError("connection", "timeout")))
+        .mockResolvedValueOnce(ok(successResult));
+
+      const deps = makeDeps({ service: { execute: vi.fn(), sendEpub } });
+
+      const promise = processEpubFile("/inbox/book.epub", deps);
+      await vi.advanceTimersByTimeAsync(2000);
+      await promise;
+
+      expect(sendEpub).toHaveBeenCalledTimes(2);
+      expect(deps.moveToSent).toHaveBeenCalledWith("/inbox/book.epub");
+      expect(deps.moveToError).not.toHaveBeenCalled();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // startWatcher tests
 // ---------------------------------------------------------------------------
 
@@ -568,7 +721,9 @@ describe("startWatcher", () => {
   describe("existing files on startup", () => {
     it("processes all existing .md files found in the watch folder", async () => {
       const deps = makeStartWatcherDeps({
-        listFiles: vi.fn().mockResolvedValue(["/watch/a.md", "/watch/b.md"]),
+        listFiles: vi.fn().mockImplementation((_dir: string, ext: string) =>
+          Promise.resolve(ext === ".md" ? ["/watch/a.md", "/watch/b.md"] : []),
+        ),
       });
 
       const handlePromise = startWatcher(deps);
@@ -577,9 +732,27 @@ describe("startWatcher", () => {
       await handle.shutdown();
 
       expect(deps.listFiles).toHaveBeenCalledWith("/watch", ".md");
+      expect(deps.listFiles).toHaveBeenCalledWith("/watch", ".epub");
       expect(deps.service.execute).toHaveBeenCalledTimes(2);
       expect(deps.moveToSent).toHaveBeenCalledWith("/watch/a.md");
       expect(deps.moveToSent).toHaveBeenCalledWith("/watch/b.md");
+    });
+
+    it("processes existing .epub files found in the watch folder", async () => {
+      const deps = makeStartWatcherDeps({
+        listFiles: vi.fn().mockImplementation((_dir: string, ext: string) =>
+          Promise.resolve(ext === ".epub" ? ["/watch/book.epub"] : []),
+        ),
+      });
+
+      const handlePromise = startWatcher(deps);
+      await vi.runAllTimersAsync();
+      const handle = await handlePromise;
+      await handle.shutdown();
+
+      expect(deps.listFiles).toHaveBeenCalledWith("/watch", ".epub");
+      expect(deps.service.sendEpub).toHaveBeenCalledTimes(1);
+      expect(deps.moveToSent).toHaveBeenCalledWith("/watch/book.epub");
     });
 
     it("handles empty watch folder without error", async () => {
@@ -593,6 +766,7 @@ describe("startWatcher", () => {
       await handle.shutdown();
 
       expect(deps.service.execute).not.toHaveBeenCalled();
+      expect(deps.service.sendEpub).not.toHaveBeenCalled();
     });
   });
 
