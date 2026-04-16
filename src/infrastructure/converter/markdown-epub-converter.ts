@@ -76,9 +76,11 @@ export class MarkdownEpubConverter implements ContentConverter {
         author.value,
         document.metadata.url,
       );
-      const coverFile = new File([jpegBuffer], "cover.jpg", {
-        type: "image/jpeg",
-      });
+      // Copy into a concrete ArrayBuffer so File() receives ArrayBuffer (not
+      // ArrayBufferLike, which includes SharedArrayBuffer and fails strict TS).
+      const coverUint8 = new Uint8Array(jpegBuffer.byteLength);
+      coverUint8.set(jpegBuffer);
+      const coverFile = new File([coverUint8], "cover.jpg", { type: "image/jpeg" });
 
       // Build image buffer map for pre-downloaded images
       const imageBufferMap = new Map<string, { buffer: Buffer; format: string }>();
