@@ -114,7 +114,7 @@ describe("CoverGenerator.generateImage", () => {
     expect(buffer.length).toBeGreaterThan(1000);
   });
 
-  it("handles a title longer than 30 characters without throwing", async () => {
+  it("returns valid JPEG when title longer than 30 characters", async () => {
     const buffer = await generator.generateImage(
       "This is a very long title that exceeds thirty characters and needs wrapping",
       "Author",
@@ -123,7 +123,7 @@ describe("CoverGenerator.generateImage", () => {
     expect(buffer[1]).toBe(0xd8);
   });
 
-  it("handles a title needing more than 3 lines without throwing", async () => {
+  it("returns valid JPEG when title needing more than 3 lines", async () => {
     const buffer = await generator.generateImage(
       "Chapter One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve",
       "Some Author Name",
@@ -132,7 +132,7 @@ describe("CoverGenerator.generateImage", () => {
     expect(buffer[1]).toBe(0xd8);
   });
 
-  it("escapes XML special characters in title and author without throwing", async () => {
+  it("returns valid JPEG when title and author have XML special characters", async () => {
     const buffer = await generator.generateImage(
       "Title & <Subtitle>",
       'Author "Quoted"',
