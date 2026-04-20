@@ -221,7 +221,7 @@ describe("MarkdownEpubConverter", () => {
 
     imageFiles.forEach((path) => {
       const filename = path.split("/").pop();
-      expect(filename).toMatch(/^[a-f0-9\-]{36}\.(jpeg|png)$/);
+      expect(filename).toMatch(/^[a-f0-9-]{36}\.(jpeg|png)$/);
     });
 
     // Find the content chapter (not the cover chapter — cover has no img UUID tags)
@@ -236,7 +236,7 @@ describe("MarkdownEpubConverter", () => {
       const file = loadedZip.file(chapterPath);
       if (file) {
         const html = await file.async("string");
-        if (/images\/[a-f0-9\-]{36}/.test(html)) {
+        if (/images\/[a-f0-9-]{36}/.test(html)) {
           contentChapterHtml = html;
           break;
         }
@@ -254,7 +254,7 @@ describe("MarkdownEpubConverter", () => {
 
     expect(imgSrcs.length).toBe(2);
     imgSrcs.forEach((src) => {
-      expect(src).toMatch(/^images\/[a-f0-9\-]{36}\.(jpeg|png)$/);
+      expect(src).toMatch(/^images\/[a-f0-9-]{36}\.(jpeg|png)$/);
       expect(imageFiles).toContain(`OEBPS/${src}`);
     });
 

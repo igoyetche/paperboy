@@ -45,7 +45,7 @@ export function createEpubWithPredownloadedImages(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   (epub).downloadAllImages = function (): void {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (!this.images || !this.images.length) {
+    if (!this.images?.length) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.log?.("No images to embed");
       return;
