@@ -27,7 +27,10 @@
       "Bash(node:*)",
       "Bash(ls:*)",
       "Bash(gh pr:*)",
-      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)"
+      "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)",
+      "Bash(sonar analyze *)",
+      "Bash(tee sonar-secrets-output.txt)",
+      "Bash(npx tsx *)"
     ]
   },
   "hooks": {
