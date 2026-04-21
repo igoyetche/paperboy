@@ -51,6 +51,7 @@ const fakeCoverGenerator: CoverGenerator = {
   // eslint-disable-next-line @typescript-eslint/require-await
   generateImage: vi.fn(async () => Buffer.from([0xff, 0xd8, 0xff])),
   generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
+  generateCoverCss: vi.fn(() => ".cover { color: red; }"),
 };
 
 /**

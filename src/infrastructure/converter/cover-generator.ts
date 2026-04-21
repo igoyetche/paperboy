@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import sharp from "sharp";
-import { buildHtmlChapter, buildCoverSvg } from "./cover-templates.js";
+import { buildHtmlChapter, buildCoverCss, buildCoverSvg } from "./cover-templates.js";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -100,9 +100,19 @@ export class CoverGenerator {
     this.iconBase64 = readFileSync(iconPath).toString("base64");
   }
 
+    /**
+   * Returns the CSS string for the EPUB stylesheet.
+   * Pass this to epub-gen-memory's `css` option so styles land in <head>, not <body>.
+   *
+   * Implements FR-36 (PB-008).
+   */
+  generateCoverCss(): string {
+    return buildCoverCss();
+  }
+
   /**
-   * Generates a styled XHTML cover chapter with title, author, and optional source domain.
-   * CSS is inlined because Kindle does not reliably load external stylesheets.
+   * Generates a styled XHTML cover chapter (title page) with title, author,
+   * and optional source domain. No inline styles — CSS comes from generateCoverCss().
    *
    * Implements FR-36 (PB-008).
    */
@@ -113,8 +123,7 @@ export class CoverGenerator {
   ): string {
     const domain =
       sourceUrl !== undefined ? extractDomain(sourceUrl) : undefined;
-    const iconDataUri = `data:image/png;base64,${this.iconBase64}`;
-    return buildHtmlChapter(title, author, domain, iconDataUri);
+    return buildHtmlChapter(title, author, domain);
   }
 
   /**

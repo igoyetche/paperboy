@@ -91,11 +91,36 @@ describe("CoverGenerator.generateHtmlChapter", () => {
     expect(html).toContain("Author &quot;Quoted&quot;");
   });
 
-  it("embeds the icon as a CSS background-image, not an img tag", () => {
+  it("does not contain any inline styles or embedded images", () => {
     const html = generator.generateHtmlChapter("Title", "Claude");
+    expect(html).not.toContain("<style");
     expect(html).not.toContain("<img");
-    expect(html).toContain("background-image");
-    expect(html).toContain("data:image/png;base64,");
+    expect(html).not.toContain("data:");
+  });
+});
+
+describe("CoverGenerator.generateCoverCss", () => {
+  const generator = new CoverGenerator();
+
+  it("returns a non-empty CSS string", () => {
+    const css = generator.generateCoverCss();
+    expect(typeof css).toBe("string");
+    expect(css.length).toBeGreaterThan(0);
+  });
+
+  it("contains cover chapter class selectors", () => {
+    const css = generator.generateCoverCss();
+    expect(css).toContain(".cover");
+    expect(css).toContain(".kicker");
+    expect(css).toContain(".title");
+    expect(css).toContain(".author");
+    expect(css).toContain(".rule");
+  });
+
+  it("does not contain any base64 data URIs", () => {
+    const css = generator.generateCoverCss();
+    expect(css).not.toContain("data:image");
+    expect(css).not.toContain("base64");
   });
 });
 

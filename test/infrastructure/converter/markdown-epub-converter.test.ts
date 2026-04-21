@@ -55,6 +55,7 @@ describe("MarkdownEpubConverter", () => {
     // eslint-disable-next-line @typescript-eslint/require-await
     generateImage: vi.fn(async () => FAKE_JPEG),
     generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
+    generateCoverCss: vi.fn(() => ".cover { color: red; }"),
   };
 
   const converter = new MarkdownEpubConverter(
