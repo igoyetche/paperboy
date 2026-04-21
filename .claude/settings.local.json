@@ -31,7 +31,8 @@
       "Bash(where sonar-scanner *)",
       "Bash(npx sonar-scanner *)",
       "Bash(sonar *)",
-      "Bash(tee sonar-secrets-output.txt)"
+      "Bash(tee sonar-secrets-output.txt)",
+      "Bash(docker info *)"
     ],
     "defaultMode": "acceptEdits"
   },
