@@ -29,7 +29,7 @@
       "Bash(gh pr:*)",
       "Bash(grep -l \"\\\\.execute\\\\|toEpub\" test/**/*.ts test/**/**/*.ts)",
       "Bash(tee sonar-secrets-output.txt)",
-      "Bash(npx tsx *),
+      "Bash(npx tsx *)",
       "Bash(where sonar-scanner *)",
       "Bash(npx sonar-scanner *)",
       "Bash(sonar *)",
