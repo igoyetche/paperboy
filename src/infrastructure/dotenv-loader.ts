@@ -14,9 +14,8 @@
 
 import dotenv from "dotenv";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
 
 export function loadDotenv(
   warn: (message: string) => void = () => {},
