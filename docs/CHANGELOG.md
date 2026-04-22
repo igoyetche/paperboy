@@ -4,6 +4,13 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-22 — PB-022 Complete: Fix missing asset copy in build
+
+### Bug Fixed
+- **`package.json`**: Added `postbuild` script — `cp -r src/infrastructure/converter/assets dist/infrastructure/converter/assets` — so `cover-icon.png` is copied to `dist/` after `tsc` compiles. No spec or domain changes.
+
+---
+
 ## 2026-04-15 — PB-008: EPUB Cover Generation — Spec update
 
 **Changed:** FR-5 updated — EPUB output now includes cover image + cover chapter (previously "single content chapter").
