@@ -30,7 +30,7 @@ function makeContent(v: string) {
 function makeDocument(v: string, url?: string) {
   const content = makeContent(v);
   const metadata =
-    url !== undefined
+    url
       ? DocumentMetadata.fromRecord({ url })
       : DocumentMetadata.empty();
   return MarkdownDocument.fromParts(content, metadata);
@@ -227,7 +227,7 @@ describe("MarkdownEpubConverter", () => {
 
     // Find the content chapter (not the cover chapter — cover has no img UUID tags)
     const allChapterPaths = Object.keys(loadedZip.files).filter((path) =>
-      path.match(/OEBPS\/\d+_.*\.xhtml$/),
+      /OEBPS\/\d+_.*\.xhtml$/.test(path),
     );
     expect(allChapterPaths.length).toBeGreaterThanOrEqual(1);
 
