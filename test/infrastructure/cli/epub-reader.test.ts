@@ -47,7 +47,7 @@ async function createEpubBuffer(title?: string): Promise<Buffer> {
   </rootfiles>
 </container>`,
   );
-  const titleElement = title !== undefined ? `<dc:title>${title}</dc:title>` : "";
+  const titleElement = title ? `<dc:title>${title}</dc:title>` : "";
   zip.file(
     "OEBPS/content.opf",
     `<?xml version="1.0"?>
