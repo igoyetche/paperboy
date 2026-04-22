@@ -20,6 +20,66 @@ import * as epubModule from "epub-gen-memory";
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
 const EPubClass = (epubModule as any).EPub;
 
+type EpubBufferMap = Map<string, { buffer: Buffer; format: string }>;
+
+function isDataUri(image: Record<string, unknown>): boolean {
+  return typeof image.url === "string" && image.url.startsWith("data:");
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fillImageBuffers(images: any[], bufferMap: EpubBufferMap, log: (msg: string) => void): void {
+  const buffers = Array.from(bufferMap.values());
+  let bufferIndex = 0;
+
+  for (const image of images) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    if (isDataUri(image)) continue;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    let bufferData = bufferMap.get(image.filename ?? "");
+    if (!bufferData && bufferIndex < buffers.length) {
+      bufferData = buffers[bufferIndex];
+      bufferIndex += 1;
+    }
+
+    if (bufferData) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      image.data = bufferData.buffer;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      log(`Assigned buffer to ${image.id}`);
+    }
+  }
+}
+
+function writeImageFiles(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  images: any[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  folder: any,
+  log: (msg: string) => void,
+  warn: (msg: string) => void,
+): void {
+  for (const image of images) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    if (isDataUri(image)) continue;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const hrefMatch = image.href?.match(/images\/(.+)$/);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const filename = hrefMatch ? hrefMatch[1] : `${image.id}.${image.extension}`;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (image.data && typeof image.data !== "string") {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      folder.file(filename, image.data);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      log(`Embedded image ${filename} (${image.data.length} bytes)`);
+    } else {
+      warn(`Image ${filename} has no data - skipping (will appear as broken image in EPUB)`);
+    }
+  }
+}
+
 /**
  * Creates an EPub instance with pre-downloaded images embedded correctly.
  *
@@ -33,7 +93,6 @@ const EPubClass = (epubModule as any).EPub;
  *
  * This ensures downloaded image buffers are paired with the correct UUID paths.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createEpubWithPredownloadedImages(
   options: unknown,
   chapters: unknown,
@@ -42,10 +101,10 @@ export function createEpubWithPredownloadedImages(
   const epub = new EPubClass(options, chapters);
 
   // Override downloadAllImages to match pre-downloaded images to detected URLs
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-  (epub as any).downloadAllImages = function (): void {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  (epub).downloadAllImages = function (): void {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (!this.images || !this.images.length) {
+    if (!this.images?.length) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.log?.("No images to embed");
       return;
@@ -54,40 +113,13 @@ export function createEpubWithPredownloadedImages(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     this.log?.("Embedding pre-downloaded images (skipping network download)");
 
-    // Get the buffer map that was attached by the converter
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imageBufferMap = (this as any).__imageBufferMap as Map<
-      string,
-      { buffer: Buffer; format: string }
-    > | undefined;
-
-    // Fill in image.data for images by matching filenames or using sequential order
-    if (imageBufferMap) {
-      const buffers = Array.from(imageBufferMap.values());
-      let bufferIndex = 0;
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      for (const image of this.images) {
-        // Try exact filename match first
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        let bufferData = imageBufferMap.get(image.filename || "");
-
-        // Fall back to sequential assignment
-        if (!bufferData && bufferIndex < buffers.length) {
-          bufferData = buffers[bufferIndex];
-          bufferIndex += 1;
-        }
-
-        if (bufferData) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          image.data = bufferData.buffer;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          this.log?.(`Assigned buffer to ${image.id}`);
-        }
-      }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const bufferMap = (this).__imageBufferMap as EpubBufferMap | undefined;
+    if (bufferMap) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      fillImageBuffers(this.images, bufferMap, (msg) => { this.log?.(msg); });
     }
 
-    // Get or create the images folder in OEBPS
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const oebps = this.zip?.folder("OEBPS");
     if (!oebps) {
@@ -104,31 +136,15 @@ export function createEpubWithPredownloadedImages(
       return;
     }
 
-    // Write image files with UUID-based filenames
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    for (const image of this.images) {
-      // Extract filename from href (contains the UUID that HTML references)
-      // href format: "images/uuid.extension"
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      const hrefMatch = image.href?.match(/images\/(.+)$/);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      const filename = hrefMatch ? hrefMatch[1] : `${image.id}.${image.extension}`;
-
-      // Write file if we have data
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (image.data && typeof image.data !== "string") {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        imagesFolder.file(filename, image.data);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        this.log?.(`Embedded image ${filename} (${image.data.length} bytes)`);
-      } else {
-        // Image was detected but we don't have data for it (not pre-downloaded)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        this.warn?.(
-          `Image ${filename} has no data - skipping (will appear as broken image in EPUB)`,
-        );
-      }
-    }
+    writeImageFiles(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+      this.images,
+      imagesFolder,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      (msg) => { this.log?.(msg); },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      (msg) => { this.warn?.(msg); },
+    );
   };
 
   return epub;
