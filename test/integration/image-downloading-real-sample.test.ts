@@ -54,6 +54,38 @@ const fakeCoverGenerator: CoverGenerator = {
   generateCoverCss: vi.fn(() => ".cover { color: red; }"),
 };
 
+function printFailureAnalysis(failures: Array<{ url: string; reason: string }>): void {
+  if (failures.length === 0) return;
+  console.log(`\n=== Failure Analysis (${failures.length} failures) ===`);
+  const reasonMap = new Map<string, string[]>();
+  for (const { url, reason } of failures) {
+    const existing = reasonMap.get(reason) ?? [];
+    existing.push(url);
+    reasonMap.set(reason, existing);
+  }
+  for (const [reason, urls] of reasonMap.entries()) {
+    console.log(`\n${reason} (${urls.length} images):`);
+    urls.slice(0, 3).forEach((url) => {
+      console.log(`  - ${url.substring(0, 120)}...`);
+    });
+    if (urls.length > 3) {
+      console.log(`  ... and ${urls.length - 3} more`);
+    }
+  }
+}
+
+function printSuccessSummary(successes: Array<{ url: string; format: string; sizeBytes: number }>): void {
+  if (successes.length === 0) return;
+  console.log(`\n=== Successful Downloads (${successes.length}) ===`);
+  successes.slice(0, 5).forEach(({ url, format, sizeBytes }) => {
+    console.log(`  ✓ ${format.toUpperCase()} - ${sizeBytes} bytes`);
+    console.log(`    ${url.substring(0, 100)}...`);
+  });
+  if (successes.length > 5) {
+    console.log(`  ... and ${successes.length - 5} more`);
+  }
+}
+
 /**
  * Real-world integration test using the George Mack article.
  * Tests that the ImageProcessor correctly handles a real-world scenario with:
@@ -114,7 +146,7 @@ describe("Image downloading with real sample file", () => {
     );
 
     // Convert markdown to HTML (simplified - just extract image tags)
-    const htmlWithImages = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
+    const htmlWithImages = markdown.replaceAll(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
       return `<img src="${src}" alt="${alt}">`;
     });
 
@@ -128,43 +160,8 @@ describe("Image downloading with real sample file", () => {
     console.log(`Failed: ${result.stats.failed}`);
     console.log(`Skipped: ${result.stats.skipped}`);
 
-    // Detailed failure analysis
-    if (diagnosticLogger.failures.length > 0) {
-      console.log(`\n=== Failure Analysis (${diagnosticLogger.failures.length} failures) ===`);
-
-      // Group by error reason
-      const reasonMap = new Map<string, string[]>();
-      for (const { url, reason } of diagnosticLogger.failures) {
-        if (!reasonMap.has(reason)) {
-          reasonMap.set(reason, []);
-        }
-        const urls = reasonMap.get(reason);
-        if (urls) {
-          urls.push(url);
-        }
-      }
-
-      for (const [reason, urls] of reasonMap.entries()) {
-        console.log(`\n${reason} (${urls.length} images):`);
-        urls.slice(0, 3).forEach((url) => {
-          console.log(`  - ${url.substring(0, 120)}...`);
-        });
-        if (urls.length > 3) {
-          console.log(`  ... and ${urls.length - 3} more`);
-        }
-      }
-    }
-
-    if (diagnosticLogger.successes.length > 0) {
-      console.log(`\n=== Successful Downloads (${diagnosticLogger.successes.length}) ===`);
-      diagnosticLogger.successes.slice(0, 5).forEach(({ url, format, sizeBytes }) => {
-        console.log(`  ✓ ${format.toUpperCase()} - ${sizeBytes} bytes`);
-        console.log(`    ${url.substring(0, 100)}...`);
-      });
-      if (diagnosticLogger.successes.length > 5) {
-        console.log(`  ... and ${diagnosticLogger.successes.length - 5} more`);
-      }
-    }
+    printFailureAnalysis(diagnosticLogger.failures);
+    printSuccessSummary(diagnosticLogger.successes);
 
     // Report summary
     if (result.stats.failed > 0) {
