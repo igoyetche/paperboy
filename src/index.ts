@@ -35,7 +35,7 @@ function registerTools(s: McpServer, handler: ToolHandler): void {
       description:
         "Convert Markdown content to EPUB and send it to a Kindle device via email. " +
         "Title can be provided via --title parameter, frontmatter 'title' field, or will error if unresolvable. " +
-        "Content should be Markdown with optional YAML frontmatter (---\\ntitle: ...\\nurl: ...\\ndate: ...\\n---)",
+        String.raw`Content should be Markdown with optional YAML frontmatter (---\ntitle: ...\nurl: ...\ndate: ...\n---)`,
       inputSchema: {
         title: z
           .string()
