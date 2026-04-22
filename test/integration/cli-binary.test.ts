@@ -22,7 +22,7 @@ async function runCli(
       // ~/.paperboy/.env fallback is not found, ensuring config fails.
       env: {
         PATH: process.env["PATH"] ?? "",
-        USERPROFILE: "C:\\nonexistent\\isolated-test-home",
+        USERPROFILE: String.raw`C:\nonexistent\isolated-test-home`,
         HOME: "/nonexistent/isolated-test-home",
       },
       timeout: 10_000,
@@ -56,7 +56,7 @@ async function runCliWithEnv(
       // Merge custom env with isolated base environment.
       env: {
         PATH: process.env["PATH"] ?? "",
-        USERPROFILE: "C:\\nonexistent\\isolated-test-home",
+        USERPROFILE: String.raw`C:\nonexistent\isolated-test-home`,
         HOME: "/nonexistent/isolated-test-home",
         ...env,
       },
@@ -122,7 +122,7 @@ describe("CLI binary integration", () => {
       expect(exitCode).toBe(4);
       expect(stderr).toContain("Configuration error");
     },
-    { timeout: 15_000 },
+    15_000,
   );
 
   it("exits 4 with config error when KINDLE_DEVICES is invalid", async () => {
