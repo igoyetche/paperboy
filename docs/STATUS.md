@@ -1,7 +1,7 @@
 # Project Status Dashboard
 
-> Last updated: 2026-04-16
-> Last ticket code: PB-020
+> Last updated: 2026-04-22
+> Last ticket code: PB-022
 
 ## Active Work
 
@@ -23,6 +23,7 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-022 | Fix: Missing asset copy in build | — | 2026-04-22 | — |
 | PB-014 | SonarQube CI Workflow | CLAUDE.md | 2026-04-15 | plans/done/PB-014-2026-04-15-sonarqube-ci.md |
 | PB-012 | Accept EPUB Files (No Transformation) | specs/main-spec.md | 2026-04-14 | — |
 | PB-019 | Image Download Compatibility (headers + redirects) | specs/PB-016-image-downloading-spec.md | 2026-04-13 | plans/done/PB-019-2026-04-13-image-download-compatibility.md |
