@@ -185,7 +185,7 @@ describe("generateEpubFilename", () => {
   });
 
   it("falls back to 'document.epub' when title sanitizes to empty", () => {
-    expect(generateEpubFilename({ title: ":::/\\||" }))
+    expect(generateEpubFilename({ title: String.raw`:::/\||` }))
       .toBe("document.epub");
   });
 

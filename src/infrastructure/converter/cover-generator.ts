@@ -122,7 +122,7 @@ export class CoverGenerator {
     sourceUrl?: string,
   ): string {
     const domain =
-      sourceUrl !== undefined ? extractDomain(sourceUrl) : undefined;
+      sourceUrl ? extractDomain(sourceUrl) : undefined;
     return buildHtmlChapter(title, author, domain);
   }
 

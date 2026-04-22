@@ -692,13 +692,11 @@ describe("processEpubFile", () => {
 
 function makeStartWatcherDeps(overrides: Partial<StartWatcherDeps> = {}): StartWatcherDeps {
   const base = makeDeps(overrides);
-  const onFileCallbacks: Array<(path: string) => void> = [];
 
   return {
     ...base,
     listFiles: vi.fn().mockResolvedValue([]),
-    createWatcher: vi.fn().mockImplementation(({ onFile }: { inboxPath: string; onFile: (path: string) => void }) => {
-      onFileCallbacks.push(onFile);
+    createWatcher: vi.fn().mockImplementation(() => {
       return { close: vi.fn().mockResolvedValue(undefined) };
     }),
     ...overrides,

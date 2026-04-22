@@ -38,7 +38,7 @@ export function buildHtmlChapter(
   domain: string | undefined,
 ): string {
   const sourceHtml =
-    domain !== undefined
+    domain
       ? `<p class="source">${escapeXml(domain)}</p>`
       : "";
 
