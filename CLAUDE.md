@@ -1,6 +1,6 @@
 # Paperboy — Send to Kindle
 
-A single-user tool that sends Markdown content to a Kindle device in one step—no manual formatting, no copy-paste. The system converts Markdown to EPUB and emails it to your configured Kindle address. Available as both an MCP server and a CLI tool (`paperboy`).
+A single-user tool that sends Markdown (or pre-built EPUB) content to a Kindle device in one step—no manual formatting, no copy-paste. The system converts Markdown to EPUB (downloading and embedding remote images) and emails it to your configured Kindle address; existing `.epub` files are forwarded as-is. Available as an MCP server, a CLI tool (`paperboy`), and a folder watcher.
 
 ---
 
@@ -133,36 +133,38 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 
 ## ✅ Implementation Status
 
-**COMPLETE** — All 24 tasks implemented with 149 passing tests and strict TypeScript compilation.
+**PRODUCTION** — Original MVP (PB-001) plus 11 follow-on features shipped (PB-002, 003, 004, 009, 010, 012, 014, 016, 017, 019, 022). Strict TypeScript compilation, 335 passing tests across 31 files.
 
-- ✅ Domain layer: value objects, service, error types, port interfaces
-- ✅ Infrastructure layer: config loading, logger, EPUB converter, SMTP mailer, CLI content reader
-- ✅ Application layer: MCP tool handler, CLI adapter, composition roots (MCP + CLI)
-- ✅ Deployment: multi-stage Dockerfile, docker-compose.yml
-- ✅ CLI: `paperboy` command with arg parsing, exit codes, dual dotenv loading
-- ✅ Testing: 149 tests across 17 test files, 100% passing
-- ✅ TypeScript: strict mode, no `any`, no assertions
+- ✅ Domain layer: value objects (`Title`, `Author`, `MarkdownContent`, `MarkdownDocument`, `EpubDocument`, `EmailAddress`, `KindleDevice`, `ImageStats`, `DocumentMetadata`), services (`SendToKindleService`, `DeviceRegistry`, `TitleResolver`), port interfaces, discriminated-union errors
+- ✅ Infrastructure layer: config loading, dotenv loader (`~/.paperboy/.env` fallback), Pino logger, Markdown→EPUB converter pipeline (with image downloading + cover generation), SMTP mailer (with retry/backoff), CLI content reader, EPUB reader (title from `<dc:title>`), folder watcher (`chokidar`-based), file mover, gray-matter frontmatter parser
+- ✅ Application layer: MCP tool handler, CLI adapter, folder watcher orchestrator, composition roots (`index.ts` for MCP, `cli-entry.ts` for CLI, `watch-entry.ts` for the watcher)
+- ✅ Deployment: multi-stage Dockerfile, docker-compose.yml, systemd/launchd/Task Scheduler service templates
+- ✅ CLI: `paperboy` command with `.md`/`.epub` input, stdin piping, multi-device dispatch, dual dotenv loading
+- ✅ Quality: SonarCloud CI scan, npm audit pre-commit hook, ESLint, 335 passing tests, strict TypeScript (no `any`, no assertions)
 
-**Git commits:** All tasks committed with descriptive messages. Ready for production deployment.
+**Active work (see `docs/STATUS.md`):** PB-008 (EPUB cover generation), PB-018 (Markdown frontmatter metadata), PB-023 (SonarQube issue cleanup).
 
 ## Project Overview
 
 **Purpose:** Enable Claude to deliver generated content (summaries, articles, research notes) directly to a Kindle device.
 
-**Two distribution paths:**
+**Three distribution paths:**
 1. **MCP Server** — Claude invokes `send_to_kindle` tool via MCP protocol (stdio or HTTP/SSE)
-2. **CLI** — `paperboy --title "Title" --file notes.md` from the terminal
+2. **CLI** — `paperboy --title "Title" --file notes.md` (or `paperboy --file book.epub`) from the terminal
+3. **Folder watcher** — `paperboy watch` monitors `WATCH_FOLDER` and dispatches each `.md`/`.epub` file as it arrives
 
-**Core workflow:** Content (Markdown) → EPUB conversion → email delivery → document appears in Kindle library.
+**Core workflow:** Content (Markdown or EPUB) → optional Markdown→EPUB conversion (with remote image download + cover generation) → email delivery → document appears in Kindle library.
 
 **Key constraints:**
 - Single-user personal tool (no multi-tenant)
-- Markdown input only → EPUB output only
+- Input: Markdown (`.md`, stdin, MCP) or pre-built EPUB (`.md`/CLI/watcher only — MCP is text-only)
+- Output: EPUB attached to a Send-to-Kindle email
 - MCP: local (stdio) and remote (HTTP/SSE) transports
-- CLI: file input, stdin piping, dual dotenv resolution
+- CLI: file input, stdin piping, dual dotenv resolution, named multi-device dispatch
+- Watcher: monitors a folder, retries transient SMTP failures, moves files to `sent/` or `error/`
 - Containerized, runs on x86_64 and ARM64
 
-See `docs/specs/main-spec.md` for full requirements. See `docs/designs/PB-001-main/adr.md` for architecture decisions. See `docs/designs/PB-004-cli-version/adr.md` for CLI design decisions. See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
+See `docs/specs/main-spec.md` for full requirements. See `docs/designs/PB-001-main/adr.md` for original architecture decisions and the other `docs/designs/PB-*` directories for feature-specific ADRs (CLI, watch folder, image downloading, etc.). See `docs/STATUS.md` for project status and `docs/CHANGELOG.md` for decision log.
 
 ## Architecture
 
@@ -172,46 +174,69 @@ Application Layer  →  Domain Layer  ←  Infrastructure Layer
 ```
 
 **Domain Layer:**
-- Value objects: `Title`, `Author`, `MarkdownContent`, `EpubDocument`
-- Service: `SendToKindleService` (orchestrates convert-then-deliver)
-- Ports: `ContentConverter`, `DocumentMailer` (injected dependencies)
+- Value objects: `Title`, `Author`, `MarkdownContent`, `MarkdownDocument`, `EpubDocument`, `EmailAddress`, `KindleDevice`, `ImageStats`, `DocumentMetadata`
+- Services: `SendToKindleService` (orchestrates Markdown convert-then-deliver and EPUB passthrough), `DeviceRegistry` (resolves device names to Kindle email addresses), `TitleResolver` (priority-ordered title selection), `findFirstH1` (helper for watcher title fallback)
+- Ports: `ContentConverter`, `DocumentMailer`, `DeliveryLogger` (injected dependencies)
 - Errors: Discriminated union `Result<T, DomainError>` for type-safe error handling
 
 **Infrastructure Layer:**
-- `MarkdownEpubConverter`: Markdown → `marked.parse()` → `sanitize-html` → `epub-gen-memory` → EPUB
-- `SmtpMailer`: SMTP delivery with retry logic and timeout enforcement
-- `Config`: Environment-based configuration with fail-fast validation
+- `MarkdownEpubConverter`: Markdown → `marked.parse()` → `sanitize-html` → image downloading + cover injection → `epub-gen-memory` → EPUB
+- `ImageProcessor`: downloads remote images with browser-compatible headers, follows redirects up to 5 hops with SSRF protection at each hop, converts AVIF/WebP/HEIC to JPEG via `sharp`
+- `CoverGenerator`: builds an SVG cover from title/author/source domain (templates in `cover-templates.ts`), rasterises to a 600×900 JPEG via `sharp`
+- `epub-with-images`: wraps `epub-gen-memory` to embed processed image buffers as files in `OEBPS/images/` (Kindle compatibility, PB-017)
+- `SmtpMailer`: SMTP delivery with retry/backoff and timeout enforcement
+- `EpubReader`: extracts `<dc:title>` from `.epub` OPF metadata via `jszip` for passthrough title resolution
+- `GrayMatterParser`: parses YAML frontmatter and strips it from the body
+- `FolderWatcher` + `FileMover`: `chokidar`-based watcher that processes `.md`/`.epub` files and moves them to `sent/` or `error/`
+- `Config` + `dotenv-loader`: environment-based configuration with fail-fast validation; loads `./.env` then `~/.paperboy/.env` as fallback
+- `Logger`: Pino-based structured logging implementing `DeliveryLogger`
 
 **Application Layer:**
 - `ToolHandler`: MCP adapter, tool registration, error mapping
-- `cli.ts`: CLI adapter — argument parsing, exit code mapping, orchestration
+- `cli.ts`: CLI adapter — argument parsing, content-source resolution (file/stdin, `.md`/`.epub`), exit code mapping, orchestration
+- `watcher.ts`: folder-watcher orchestrator — wires `FolderWatcher` to `SendToKindleService`, handles `.md` vs `.epub` dispatch, retries
 - MCP Transport: stdio (default) + HTTP/SSE (when `MCP_HTTP_PORT` is set)
 - CLI Transport: `cli-entry.ts` composition root with dual dotenv loading
+- Watcher Transport: `watch-entry.ts` composition root
 
-See `docs/designs/PB-001-main/adr.md` for MCP design rationale. See `docs/designs/PB-004-cli-version/adr.md` for CLI design rationale.
+See `docs/designs/PB-001-main/adr.md` for MCP design rationale. See `docs/designs/PB-004-cli-version/adr.md` for CLI design rationale. See feature-specific ADRs under `docs/designs/PB-*/` for watch folder, image downloading, EPUB passthrough, and cover generation.
 
 ## Project Structure
 
 ```
 src/
   domain/
-    values/          # Immutable value objects
-    ports.ts         # Interface contracts (ContentConverter, DocumentMailer)
-    errors.ts        # Domain error discriminated union
-    send-to-kindle-service.ts
+    values/                    # Immutable value objects (Title, Author, MarkdownContent,
+                               #   MarkdownDocument, EpubDocument, EmailAddress,
+                               #   KindleDevice, ImageStats, DocumentMetadata)
+    ports.ts                   # Interface contracts (ContentConverter, DocumentMailer, DeliveryLogger)
+    errors.ts                  # Domain error discriminated union
+    send-to-kindle-service.ts  # Convert-then-deliver orchestration + EPUB passthrough
+    device-registry.ts         # Resolves device names to Kindle email addresses
+    title-resolver.ts          # Priority-ordered title selection
+    find-first-h1.ts           # Helper for watcher title fallback
   infrastructure/
-    converter/       # EPUB generation (markdown-epub-converter.ts)
-    mailer/          # Email delivery (smtp-mailer.ts)
-    cli/             # CLI content reading (content-reader.ts)
-    config.ts        # Configuration loading & validation
-    logger.ts        # Structured logging
+    converter/                 # markdown-epub-converter.ts, image-processor.ts,
+                               #   cover-generator.ts, cover-templates.ts, epub-with-images.ts,
+                               #   assets/cover-icon.png
+    mailer/                    # smtp-mailer.ts
+    cli/                       # content-reader.ts, epub-reader.ts
+    watcher/                   # folder-watcher.ts, file-mover.ts
+    frontmatter/               # gray-matter-parser.ts
+    config.ts                  # Configuration loading & validation
+    dotenv-loader.ts           # Dual ./.env + ~/.paperboy/.env loader
+    logger.ts                  # Pino-based structured logging
   application/
-    tool-handler.ts  # MCP tool adapter
-    cli.ts           # CLI adapter (arg parsing, exit codes, orchestration)
-  index.ts           # MCP composition root, transports
-  cli-entry.ts       # CLI composition root, dotenv loading
-Dockerfile           # Multi-stage build, Node 22 Alpine
+    tool-handler.ts            # MCP tool adapter
+    cli.ts                     # CLI adapter (arg parsing, exit codes, orchestration)
+    watcher.ts                 # Folder-watcher orchestrator
+  index.ts                     # MCP composition root, transports
+  cli-entry.ts                 # CLI composition root, dotenv loading
+  watch-entry.ts               # Watcher composition root
+Dockerfile                     # Multi-stage build, Node 22 Alpine
 docker-compose.yml
+sonar-project.properties       # SonarCloud scan config
+scripts/service-templates/     # systemd, launchd, Task Scheduler templates for the watcher
 .env.example
 package.json
 tsconfig.json
@@ -692,7 +717,7 @@ describe("Title", () => {
 ```
 
 **Test Summary:**
-- 149 tests across 17 test files
+- 335 tests across 31 test files (3 skipped — long-running real-network integration tests)
 - Vitest for fast, isolated test execution
 - Mocks only infrastructure ports, never domain objects
 - Error paths tested exhaustively
@@ -706,26 +731,37 @@ describe("Title", () => {
 
 ## Testing
 
-Comprehensive test coverage across all layers:
+Comprehensive test coverage across all layers — **335 tests across 31 files** (3 skipped, see below):
 
-**Domain Layer (26 tests)**
-- Value objects: Title, Author, MarkdownContent, EpubDocument
-- Error types and Result helpers
-- SendToKindleService orchestration logic
+**Domain Layer**
+- Value objects: `Title`, `Author`, `MarkdownContent`, `MarkdownDocument`, `EpubDocument`, `EmailAddress`, `KindleDevice`, `DocumentMetadata`
+- Errors and `Result` helpers
+- `SendToKindleService` orchestration (Markdown convert-then-deliver and EPUB passthrough)
+- `DeviceRegistry` device-name resolution
+- `TitleResolver` priority-ordered title selection
+- `findFirstH1` helper
 
-**Infrastructure Layer (39 tests)**
+**Infrastructure Layer**
 - Configuration loading and validation
-- Logger integration
-- MarkdownEpubConverter pipeline (Markdown → HTML → EPUB → Buffer)
-- SmtpMailer error categorization and email delivery
+- Pino logger integration
+- `MarkdownEpubConverter` pipeline (Markdown → HTML → EPUB → Buffer)
+- `ImageProcessor`: download, format conversion, header presence, redirect following, SSRF on redirects
+- `CoverGenerator`: SVG → JPEG rasterisation
+- `epub-with-images`: image file embedding in `OEBPS/images/`
+- `SmtpMailer`: error categorization and email delivery
+- `EpubReader`: title extraction from `<dc:title>`
+- `GrayMatterParser`: frontmatter parsing and body stripping
+- `FolderWatcher` + `FileMover`: file detection, debouncing, sent/error movement
 - CLI content reader: file reading with size guard, stdin with timeout
 
-**Application Layer (55 tests)**
-- ToolHandler error mapping and MCP integration (8 tests)
-- CLI adapter: parseArgs, resolveContentSource, mapErrorToExitCode, formatSuccess, formatError, run (47 tests)
+**Application Layer**
+- `ToolHandler`: error mapping and MCP integration
+- CLI adapter: `parseArgs`, `resolveContentSource`, `mapErrorToExitCode`, `formatSuccess`, `formatError`, `run`
+- Watcher orchestrator: dispatch logic, retries, file movement on success/failure
 
-**Integration (3 tests)**
-- CLI binary wiring: --help, --version, config error exit codes
+**Integration**
+- CLI binary wiring: `--help`, `--version`, config error exit codes
+- Image downloading against real article samples (3 tests are skipped by default — they hit the live network and take 5–10s each)
 
 **Integration tests require `npm run build` before running.**
 
@@ -737,52 +773,69 @@ Comprehensive test coverage across all layers:
 
 **Run tests:**
 ```bash
-npm test              # Run all tests once
-npm run test:watch   # Watch mode for development
+npm test               # Run all tests once
+npm run test:watch     # Watch mode for development
+npm run test:coverage  # Generate lcov coverage report (also feeds sonar:local)
 ```
 
 ## What's Been Built
 
 ### Complete Implementation
 1. ✅ **Domain Layer** — Pure business logic, zero dependencies
-   - 4 value objects with validation (`Title`, `Author`, `MarkdownContent`, `EpubDocument`)
-   - Service orchestrating convert-then-deliver pipeline
+   - Value objects with validation: `Title`, `Author`, `MarkdownContent`, `MarkdownDocument`, `EpubDocument`, `EmailAddress`, `KindleDevice`, `ImageStats`, `DocumentMetadata`
+   - `SendToKindleService` orchestrates convert-then-deliver and EPUB passthrough
+   - `DeviceRegistry` resolves named Kindle devices
+   - `TitleResolver` enforces the priority chain (caller → frontmatter → metadata → filename)
    - Port interfaces for converter, mailer, logger
-   - Discriminated union error types
+   - Discriminated-union error types
 
 2. ✅ **Infrastructure Layer** — External integration
    - Configuration loader with fail-fast validation
-   - Pino-based logger implementing DeliveryLogger port
-   - Markdown-to-EPUB converter with HTML sanitization
-   - SMTP mailer with error categorization and retry logic
+   - Dual dotenv loader (`./.env` + `~/.paperboy/.env` fallback)
+   - Pino-based logger implementing `DeliveryLogger`
+   - Markdown-to-EPUB converter with HTML sanitization, image embedding, and cover injection
+   - Image processor: download, browser-compatible headers, SSRF-safe redirect following, AVIF/WebP/HEIC → JPEG via `sharp`
+   - Cover generator: SVG → 600×900 JPEG via `sharp`
+   - EPUB reader: title extraction from `<dc:title>` via `jszip`
+   - Frontmatter parser: `gray-matter` for YAML frontmatter
+   - SMTP mailer with retry/backoff and error categorization
+   - Folder watcher (`chokidar`) + file mover for `sent/`/`error/` lifecycle
    - CLI content reader (file with size guard, stdin with timeout)
 
-3. ✅ **Application Layer** — MCP + CLI integration
-   - ToolHandler for MCP tool registration and error mapping
-   - CLI adapter for argument parsing, exit code mapping, and orchestration
-   - MCP composition root (`index.ts`) with stdio + HTTP/SSE transports
-   - CLI composition root (`cli-entry.ts`) with dual dotenv loading
+3. ✅ **Application Layer** — MCP, CLI, and Watcher integration
+   - `ToolHandler` for MCP tool registration and error mapping
+   - CLI adapter for argument parsing, `.md`/`.epub` dispatch, exit code mapping, and orchestration
+   - Folder-watcher orchestrator wiring detection → conversion/passthrough → delivery → file movement
+   - Three composition roots: `index.ts` (MCP, stdio + HTTP/SSE), `cli-entry.ts` (CLI), `watch-entry.ts` (Watcher)
 
 4. ✅ **Deployment** — Production ready
-   - Multi-stage Dockerfile (Alpine base, minimal size)
+   - Multi-stage Dockerfile (Alpine base, minimal size) with asset copy postbuild
    - docker-compose.yml with environment file support
+   - Service templates for systemd, launchd, and Windows Task Scheduler
    - Typed environment configuration
-   - npm bin field for `paperboy` CLI command
+   - npm `bin` field for the `paperboy` CLI command
 
-5. ✅ **Claude Code Integration**
+5. ✅ **Quality & CI**
+   - SonarCloud scan in CI plus `npm run sonar:local` for local runs
+   - npm audit pre-commit hook + CI gate
+   - ESLint via husky + lint-staged
+   - Quality badges in `README.md`
 
 ### Key Features
 - **Type Safety:** Strict TypeScript, no `any`, no assertions
 - **Error Handling:** Result types for compile-time exhaustiveness
 - **Validation:** Fail-fast at startup, validated inputs
 - **Logging:** Structured JSON logging with pino (silent in CLI mode)
-- **Security:** XSS sanitization, credential isolation
-- **Dual Distribution:** MCP server + CLI (`paperboy`) from shared domain/infra
-- **Testing:** 149 tests, 100% passing
+- **Security:** XSS sanitization, credential isolation, SSRF protection on image fetches (including redirect targets)
+- **Image Compatibility:** Remote image download with format conversion for Kindle (AVIF/WebP/HEIC → JPEG)
+- **EPUB Passthrough:** Pre-built `.epub` files are forwarded as-is, skipping conversion
+- **Multi-device Dispatch:** Send to a named Kindle device (`--device personal`)
+- **Triple Distribution:** MCP server + CLI (`paperboy`) + folder watcher (`paperboy watch`) from shared domain/infra
+- **Testing:** 335 tests across 31 files, 100% passing
 
 ## Notes
 
-- **Learning MVP** — Focus on clear, simple code over premature optimization
-- **Production ready** — Tested, typed, containerized, documented
-- **Future extensions** — Architecture supports: preview mode, delivery confirmation, custom stylesheet injection, URL-to-Kindle, structured output (--json)
+- **Production ready** — Tested, typed, containerized, documented; deployed for personal use
+- **Active extensions tracked in `docs/STATUS.md`** — frontmatter metadata (PB-018), cover generation (PB-008), SonarQube cleanup (PB-023)
+- **Backlogged ideas** — Cloudflare bypass via curl-impersonate (PB-020), encrypted config storage (PB-011), interactive setup wizard (PB-007), trusted HTTPS cert (PB-006)
 - **.gitignore** — Already configured to exclude `node_modules/`, `dist/`, `.env`, `*.tsbuildinfo`

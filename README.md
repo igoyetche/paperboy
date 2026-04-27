@@ -7,12 +7,12 @@
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=paperboy)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=paperboy)
 
-Send Markdown content to your Kindle as an EPUB — from the terminal, from Claude Code, or from any MCP client.
+Send Markdown (or pre-built EPUB) content to your Kindle — from the terminal, from Claude Code, or from any MCP client.
 
 ## How It Works
 
-1. You provide Markdown content (a file, stdin, or via Claude)
-2. Paperboy converts it to EPUB
+1. You provide Markdown content (a file, stdin, or via Claude) or an existing `.epub` file
+2. Paperboy converts Markdown to EPUB (downloading and embedding remote images along the way); `.epub` files pass through untouched
 3. The EPUB is emailed to your Kindle address
 4. The document appears in your Kindle library
 
@@ -21,8 +21,11 @@ Send Markdown content to your Kindle as an EPUB — from the terminal, from Clau
 ### CLI
 
 ```bash
-# From a file
+# From a Markdown file
 paperboy --title "My Article" --file article.md
+
+# From an existing EPUB (sent as-is, no conversion)
+paperboy --file book.epub
 
 # From stdin
 cat article.md | paperboy --title "My Article"
@@ -33,7 +36,7 @@ paperboy --title "Notes" --file notes.md --author "Alice" --device "Alice's Kind
 
 ### Folder Watcher
 
-Drop `.md` files into a watched folder — Paperboy converts and sends them automatically.
+Drop `.md` or `.epub` files into a watched folder — Paperboy converts (Markdown) or forwards (EPUB) and sends them automatically.
 
 ```bash
 paperboy watch
@@ -96,8 +99,8 @@ Multiple devices: `KINDLE_DEVICES=personal:you@kindle.com,partner:them@kindle.co
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--title <title>` | Yes | Title of the document sent to Kindle |
-| `--file <path>` | No | Path to a Markdown file; reads from stdin if omitted |
+| `--title <title>` | No | Title of the document sent to Kindle. If omitted, resolved from EPUB metadata (for `.epub`), Markdown frontmatter, or the filename stem |
+| `--file <path>` | No | Path to a `.md` or `.epub` file; reads Markdown from stdin if omitted |
 | `--author <name>` | No | Author name embedded in the EPUB (default: configured value) |
 | `--device <name>` | No | Target Kindle device name (default: first configured device) |
 | `--help` | No | Show usage text and exit |
@@ -108,7 +111,7 @@ Multiple devices: `KINDLE_DEVICES=personal:you@kindle.com,partner:them@kindle.co
 | Code | Meaning |
 |------|---------|
 | 0 | Document sent successfully |
-| 1 | Validation error (missing title, empty content, size limit) |
+| 1 | Validation error (unresolvable title, empty content, malformed frontmatter, size limit) |
 | 2 | EPUB conversion error |
 | 3 | Email delivery error (SMTP auth, connection, rejection) |
 | 4 | Configuration error (missing or invalid environment variables) |
@@ -193,7 +196,7 @@ docker compose up
 
 ## Folder Watcher
 
-The folder watcher monitors a directory for Markdown files and automatically sends each one to your Kindle. Drop a `.md` file in — it converts, sends, and moves the file to `sent/` when done (or `error/` if something goes wrong).
+The folder watcher monitors a directory for Markdown and EPUB files and automatically sends each one to your Kindle. Drop a `.md` or `.epub` file in — `.md` files are converted to EPUB and `.epub` files are sent as-is; in both cases the file moves to `sent/` when done (or `error/` if something goes wrong).
 
 ### Setup
 
@@ -269,13 +272,16 @@ Run locally: `npm run audit:ci` (exits non-zero if vulnerabilities present)
 ## Development
 
 ```bash
-npm run dev          # Run MCP server with tsx (no build step)
+npm run dev            # Run MCP server with tsx (no build step)
 npm run cli -- --help  # Run CLI with tsx
-npm run build        # Compile TypeScript to dist/
-npm test             # Run automated tests (190 tests)
-npm run test:watch   # Run tests in watch mode
-npm run test:email   # Send a real test email to verify SMTP config
-npm run audit:ci     # Check for high/critical npm vulnerabilities
+npm run build          # Compile TypeScript to dist/
+npm test               # Run automated tests (335 tests across 31 files)
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Run tests with coverage report (lcov)
+npm run sonar:local    # Run coverage + SonarCloud scan locally
+npm run test:email     # Send a real test email to verify SMTP config
+npm run audit:ci       # Check for high/critical npm vulnerabilities
+npm run lint           # Lint sources with ESLint
 ```
 
 ### Gmail Setup
@@ -298,9 +304,9 @@ Three-layer design with strict dependency inversion:
 Application (MCP + CLI adapters) --> Domain (service, values, ports) <-- Infrastructure (EPUB, SMTP)
 ```
 
-- **Domain**: Value objects (`Title`, `Author`, `MarkdownContent`, `EpubDocument`), service orchestration, port interfaces, typed errors with `Result<T, E>`
-- **Infrastructure**: Markdown-to-EPUB conversion (`marked` + `sanitize-html` + `epub-gen-memory`), SMTP delivery (`nodemailer`), Pino logging, CLI content reader
-- **Application**: MCP tool handler, CLI adapter (arg parsing, exit codes, orchestration), two composition roots (`index.ts` for MCP, `cli-entry.ts` for CLI)
+- **Domain**: Value objects (`Title`, `Author`, `MarkdownContent`, `EpubDocument`, `ImageStats`), service orchestration (Markdown convert-then-deliver and EPUB passthrough), port interfaces, typed errors with `Result<T, E>`
+- **Infrastructure**: Markdown-to-EPUB conversion (`marked` + `sanitize-html` + `epub-gen-memory`), image processor (downloads remote images with SSRF-safe redirect handling, converts AVIF/WebP/HEIC to JPEG via `sharp`), cover generator (SVG → JPEG via `sharp`), YAML frontmatter parser (`gray-matter`), EPUB reader (title from `<dc:title>` via `jszip`), SMTP delivery (`nodemailer`) with retry/backoff, Pino logging, CLI content reader
+- **Application**: MCP tool handler, CLI adapter (arg parsing, exit codes, orchestration), folder watcher (`chokidar`), two composition roots (`index.ts` for MCP, `cli-entry.ts` for CLI)
 
 ## License
 
