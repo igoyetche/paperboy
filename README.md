@@ -7,6 +7,8 @@
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=paperboy)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=paperboy)
 
+<img src="docs/assets/icons/main-icon.png" alt="Paperboy icon" width="400" />
+
 Send Markdown (or pre-built EPUB) content to your Kindle — from the terminal, from Claude Code, or from any MCP client.
 
 ## How It Works
