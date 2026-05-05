@@ -1,4 +1,10 @@
-# Paperboy
+# Paperboy - Send to Kindle in one step
+
+<div align="center">
+  <img src="docs/assets/icons/main-icon.png" alt="Paperboy icon" width="400" />
+</div>
+
+<div align="center"> 
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=paperboy)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=bugs)](https://sonarcloud.io/summary/new_code?id=paperboy)
@@ -7,7 +13,7 @@
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=paperboy)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=paperboy&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=paperboy)
 
-<img src="docs/assets/icons/main-icon.png" alt="Paperboy icon" width="400" />
+</div>
 
 Send Markdown (or pre-built EPUB) content to your Kindle — from the terminal, from Claude Code, or from any MCP client.
 
