@@ -4,6 +4,23 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-05-05 — PB-024: Documentation Improvements
+
+### Documentation Added
+- **`Architecture.md`**: Comprehensive 13-section reference guide covering system overview, layering, entry points (MCP/CLI/Watcher), domain/infrastructure/application layers, pipelines, error handling, and testing strategy. Serves as the definitive architecture reference for contributors.
+- **`docs/SonarQube-Architecture.md`**: Quality-loop architecture documentation describing defence-in-depth static-analysis enforcement (hooks, CI, MCP tools, visibility). Explains the end-to-end flow from development through PR review.
+
+### Documentation Reorganized
+- **`docs/assets/icons/`**: Centralized asset directory created to support future documentation assets (images, screenshots, diagrams). Initial contents: icon files and project main icon.
+
+### README Enhanced
+- **Project icon**: Integrated 400px-wide icon at the top of README for visual branding.
+
+### No Spec Changes
+These are documentation-only improvements; no functional behavior changed.
+
+---
+
 ## 2026-04-22 — PB-022 Complete: Fix missing asset copy in build
 
 ### Bug Fixed
