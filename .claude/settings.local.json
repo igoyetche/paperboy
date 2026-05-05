@@ -34,7 +34,9 @@
       "Bash(npx sonar-scanner *)",
       "Bash(sonar *)",
       "Bash(tee sonar-secrets-output.txt)",
-      "Bash(docker info *)"
+      "Bash(docker info *)",
+      "Bash(where docker *)",
+      "mcp__sonarqube__search_sonar_issues_in_projects"
     ],
     "defaultMode": "acceptEdits"
   },
