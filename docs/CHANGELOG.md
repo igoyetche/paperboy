@@ -4,6 +4,20 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-05-06 — PB-026: Redesigned Thumbnail Rendering — Spec update
+
+**Changed:** FR-36 — Cover thumbnail JPEG dimensions are no longer fixed at 600 × 900. They are selectable from three predefined Kindle resolutions (`1264 × 1680` default, `1072 × 1448`, `600 × 800`) via `PAPERBOY_COVER_RESOLUTION`. The implementation pipeline changes from "SVG hand-template + sharp" to "active flavor's HTML/CSS template → Satori → SVG → sharp → JPEG."
+
+**Changed:** FR-37 — Cover chapter HTML/CSS now produced by the active flavor's chapter template, not a single hard-coded template.
+
+**Added:** FR-38 — Cover flavor selection. A flavor is a registered visual identity providing thumbnail, chapter HTML, and chapter CSS templates. `PAPERBOY_COVER_FLAVOR` env var (default `classic`) selects the active flavor. Unknown flavor names fail fast at startup. One bundled flavor (`classic`) ships with the feature; adding new flavors is a single-file addition plus one registry line.
+
+**Added:** FR-39 — Cover resolution selection. `PAPERBOY_COVER_RESOLUTION` env var (default `1264x1680`) selects the thumbnail JPEG dimensions from the fixed set `{1264x1680, 1072x1448, 600x800}`. Arbitrary widths/heights are not supported.
+
+**Implementation impact:** `cover-templates.ts` is removed; the templates move into `src/infrastructure/converter/flavors/classic/`. `domain/ports.ts` gains the `CoverFlavor`, `ThumbnailInput`, `ChapterInput`, `SatoriNode`, and `SatoriStyle` interfaces. A new `domain/values/cover-resolution.ts` defines the `COVER_RESOLUTIONS` map and `CoverResolutionName` type. Satori and one bundled font (Source Serif 4 regular) are added as dependencies; total Docker image growth ≈ 4 MB.
+
+---
+
 ## 2026-05-05 — PB-024: Documentation Improvements
 
 ### Documentation Added

@@ -1,12 +1,13 @@
 # Project Status Dashboard
 
-> Last updated: 2026-05-05
-> Last ticket code: PB-024
+> Last updated: 2026-05-06
+> Last ticket code: PB-026
 
 ## Active Work
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|---|---|---|---|
+| PB-026 | Redesigned Thumbnail Rendering | Plan | specs/main-spec.md | plans/backlog/PB-026-redesigned-thumbnail-rendering.md | Medium |
 | PB-023 | Fix SonarQube Open Issues | 🔄 In Progress | — | — | Medium |
 | PB-018 | Markdown Frontmatter Metadata | 🔄 In Progress | specs/main-spec.md | plans/active/PB-018-markdown-frontmatter-metadata.md | Medium |
 | PB-008 | EPUB Cover Generation | 🔄 In Progress | specs/main-spec.md | plans/active/PB-008-epub-cover.md, plans/active/PB-008-bugfix-cover-image-ordering.md | Medium |
@@ -14,6 +15,7 @@
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
+| PB-025 | EPUB Navigation Support | Feature | specs/main-spec.md | — | Medium |
 | PB-020 | curl --impersonate Cloudflare Bypass | Feature | specs/PB-016-image-downloading-spec.md | — | Medium |
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
