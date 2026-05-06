@@ -1,12 +1,13 @@
 # Project Status Dashboard
 
-> Last updated: 2026-05-05
-> Last ticket code: PB-024
+> Last updated: 2026-05-06
+> Last ticket code: PB-025
 
 ## Active Work
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|---|---|---|---|
+| PB-025 | EPUB Navigation Support | 🔄 In Progress | specs/main-spec.md | plans/active/PB-025-epub-navigation-support.md | Medium |
 | PB-023 | Fix SonarQube Open Issues | 🔄 In Progress | — | — | Medium |
 | PB-018 | Markdown Frontmatter Metadata | 🔄 In Progress | specs/main-spec.md | plans/active/PB-018-markdown-frontmatter-metadata.md | Medium |
 | PB-008 | EPUB Cover Generation | 🔄 In Progress | specs/main-spec.md | plans/active/PB-008-epub-cover.md, plans/active/PB-008-bugfix-cover-image-ordering.md | Medium |
