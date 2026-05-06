@@ -127,7 +127,17 @@ export function splitIntoChapters(
 
     const start = current.index;
     const end = next !== undefined ? next.index : html.length;
-    const fragment = html.slice(start, end);
+    let fragment = html.slice(start, end);
+
+    // Strip the opening heading tag so it's not duplicated when epub-gen-memory
+    // uses the title field to add a heading. The title is stored separately in
+    // ChapterSlice.title, so it shouldn't appear in the HTML body as well.
+    const headingCloseTag = `</${current.entry.tag}>`;
+    const closeIndex = fragment.indexOf(headingCloseTag);
+    if (closeIndex !== -1) {
+      const afterClose = closeIndex + headingCloseTag.length;
+      fragment = fragment.slice(afterClose);
+    }
 
     slices.push({
       title: current.entry.text,

@@ -57,12 +57,12 @@ describe("splitIntoChapters — two chapters", () => {
     const [first, second] = result as [ChapterSlice, ChapterSlice];
 
     expect(first.title).toBe("Chapter One");
-    expect(first.html).toContain('<h1 id="ch1">Chapter One</h1>');
+    expect(first.html).not.toContain('<h1 id="ch1">');  // heading stripped to avoid duplication
     expect(first.html).toContain("Body of chapter one.");
     expect(first.html).not.toContain("Chapter Two");
 
     expect(second.title).toBe("Chapter Two");
-    expect(second.html).toContain('<h1 id="ch2">Chapter Two</h1>');
+    expect(second.html).not.toContain('<h1 id="ch2">');  // heading stripped to avoid duplication
     expect(second.html).toContain("Body of chapter two.");
     expect(second.html).not.toContain("Chapter One");
   });
@@ -198,7 +198,7 @@ describe("splitIntoChapters — trailing content", () => {
     const result = splitIntoChapters(html, tocEntries);
 
     expect(result).toHaveLength(1);
-    expect(result[0]?.html).toContain('<h1 id="only">Only Chapter</h1>');
+    expect(result[0]?.html).not.toContain('<h1 id="only">');  // heading stripped to avoid duplication
     expect(result[0]?.html).toContain("All the content goes here.");
     expect(result[0]?.html).toContain("More content.");
   });
@@ -238,9 +238,9 @@ describe("splitIntoChapters — empty chapter body", () => {
 
     expect(result).toHaveLength(2);
 
-    // Chapter One has no body — its html is just the heading tag itself
+    // Chapter One has no body — after stripping the heading, html is empty
     expect(result[0]?.title).toBe("Chapter One");
-    expect(result[0]?.html).toBe('<h1 id="ch1">Chapter One</h1>');
+    expect(result[0]?.html).toBe('');
 
     // Chapter Two has the content
     expect(result[1]?.html).toContain("Content.");
@@ -259,9 +259,9 @@ describe("splitIntoChapters — empty chapter body", () => {
     const result = splitIntoChapters(html, tocEntries);
 
     expect(result).toHaveLength(3);
-    expect(result[0]?.html).toBe('<h2 id="a">Alpha</h2>');
-    expect(result[1]?.html).toBe('<h2 id="b">Beta</h2>');
-    expect(result[2]?.html).toBe('<h2 id="c">Gamma</h2>');
+    expect(result[0]?.html).toBe('');  // heading stripped, no body content = empty
+    expect(result[1]?.html).toBe('');  // heading stripped, no body content = empty
+    expect(result[2]?.html).toBe('');  // heading stripped, no body content = empty
   });
 });
 
