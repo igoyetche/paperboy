@@ -127,15 +127,25 @@ export class CoverGenerator {
   }
 
   /**
+   * Returns the 600×900 SVG string used to build the Kindle library thumbnail.
+   * Exposed so the SVG can be inspected/snapshotted independently of rasterisation.
+   *
+   * Implements FR-37 (PB-008).
+   */
+  generateCoverSvg(title: string, author: string): string {
+    const titleLines = wrapTitle(title, 16, 4);
+    const iconDataUri = `data:image/png;base64,${this.iconBase64}`;
+    return buildCoverSvg(titleLines, author, iconDataUri);
+  }
+
+  /**
    * Generates a 600×900 JPEG cover image for the Kindle library thumbnail.
    * SVG is rasterised to JPEG via sharp.
    *
    * Implements FR-37 (PB-008).
    */
   async generateImage(title: string, author: string): Promise<Buffer> {
-    const titleLines = wrapTitle(title, 16, 4);
-    const iconDataUri = `data:image/png;base64,${this.iconBase64}`;
-    const svg = buildCoverSvg(titleLines, author, iconDataUri);
+    const svg = this.generateCoverSvg(title, author);
     return sharp(Buffer.from(svg)).jpeg({ quality: 90 }).toBuffer();
   }
 }

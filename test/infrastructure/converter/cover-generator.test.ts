@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { CoverGenerator, wrapTitle } from "../../../src/infrastructure/converter/cover-generator.js";
 
 describe("wrapTitle", () => {
@@ -121,6 +124,75 @@ describe("CoverGenerator.generateCoverCss", () => {
     const css = generator.generateCoverCss();
     expect(css).not.toContain("data:image");
     expect(css).not.toContain("base64");
+  });
+});
+
+describe("CoverGenerator cover chapter HTML fixture", () => {
+  const generator = new CoverGenerator();
+  const fixturePath = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "fixtures",
+    "covers",
+    "sample-cover.html",
+  );
+
+  const sampleTitle = "The Quick Brown Fox Jumps Over the Lazy Dog";
+  const sampleAuthor = "Claude";
+  const sampleSource = "https://www.theverge.com/2026/05/example-article";
+
+  function buildSampleDocument(): string {
+    const css = generator.generateCoverCss();
+    const chapter = generator.generateHtmlChapter(
+      sampleTitle,
+      sampleAuthor,
+      sampleSource,
+    );
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Paperboy cover sample</title>
+<style>
+${css}
+</style>
+</head>
+<body>
+${chapter}
+</body>
+</html>
+`;
+  }
+
+  it("matches the committed sample-cover.html fixture", () => {
+    const generated = buildSampleDocument();
+
+    if (process.env.UPDATE_COVER_FIXTURE === "1" || !existsSync(fixturePath)) {
+      writeFileSync(fixturePath, generated, "utf-8");
+    }
+
+    const fixture = readFileSync(fixturePath, "utf-8");
+    expect(generated).toBe(fixture);
+  });
+
+  it("matches the committed sample-cover.svg fixture (Kindle library thumbnail)", () => {
+    const svgPath = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "fixtures",
+      "covers",
+      "sample-cover.svg",
+    );
+    const generated = generator.generateCoverSvg(sampleTitle, sampleAuthor);
+
+    if (process.env.UPDATE_COVER_FIXTURE === "1" || !existsSync(svgPath)) {
+      writeFileSync(svgPath, generated, "utf-8");
+    }
+
+    const fixture = readFileSync(svgPath, "utf-8");
+    expect(generated).toBe(fixture);
   });
 });
 
