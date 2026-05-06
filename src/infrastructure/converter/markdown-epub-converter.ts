@@ -141,8 +141,18 @@ export class MarkdownEpubConverter implements ContentConverter {
         contentEntries = [{ title: title.value, content: processedHtml }];
       }
 
+      // FR-25 (PB-025): Skip TOC generation for single-section documents since
+      // there's nothing to navigate between. Multi-section docs need the TOC.
+      const epubOptions = {
+        title: title.value,
+        author: author.value,
+        cover: coverFile,
+        css: coverCss,
+        needGenerateToc: isMultiSection(tocManifest),
+      };
+
       const epubInstance = createEpubWithPredownloadedImages(
-        { title: title.value, author: author.value, cover: coverFile, css: coverCss },
+        epubOptions,
         [coverEntry, ...contentEntries],
       );
 
