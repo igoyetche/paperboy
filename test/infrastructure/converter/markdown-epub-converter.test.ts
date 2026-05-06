@@ -262,6 +262,44 @@ describe("MarkdownEpubConverter", () => {
     expect(contentChapterHtml).not.toContain("data:image/");
   });
 
+  it("preserves id attributes on heading tags after sanitization", async () => {
+    // Inline HTML with an explicit id — marked passes it through unchanged;
+    // sanitize-html must NOT strip the id attribute (FR-* PB-025).
+    const result = await converter.toEpub(
+      makeTitle("Navigation Test"),
+      makeDocument('<h2 id="section-1">Section 1</h2>\n\nSome content.'),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Conversion failed: ${result.error.message}`);
+    }
+
+    // Extract the content chapter from the EPUB ZIP and verify id is preserved
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(result.value.buffer);
+
+    const chapterPaths = Object.keys(loadedZip.files).filter((path) =>
+      /OEBPS\/\d+_.*\.xhtml$/.test(path),
+    );
+    expect(chapterPaths.length).toBeGreaterThanOrEqual(1);
+
+    let foundId = false;
+    for (const chapterPath of chapterPaths) {
+      const file = loadedZip.file(chapterPath);
+      if (file) {
+        const html = await file.async("string");
+        if (html.includes('id="section-1"')) {
+          foundId = true;
+          break;
+        }
+      }
+    }
+
+    expect(foundId).toBe(true);
+  });
+
   it("preserves original image URLs in HTML during processing (not replaced with data URIs)", async () => {
     const testImageBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 

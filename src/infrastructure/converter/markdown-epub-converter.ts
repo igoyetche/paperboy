@@ -51,9 +51,17 @@ export class MarkdownEpubConverter implements ContentConverter {
     try {
       const rawHtml = await marked.parse(document.content.value);
 
+      // Implements FR-* (PB-025): preserve id attributes on heading elements
+      // so that internal TOC anchor links resolve correctly in the EPUB.
       const safeHtml = sanitizeHtml(rawHtml, {
         allowedTags: ALLOWED_TAGS,
         allowedAttributes: {
+          h1: ["id"],
+          h2: ["id"],
+          h3: ["id"],
+          h4: ["id"],
+          h5: ["id"],
+          h6: ["id"],
           a: ["href", "title"],
           img: ["src", "alt", "title"],
           td: ["colspan", "rowspan"],
