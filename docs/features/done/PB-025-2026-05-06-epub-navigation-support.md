@@ -1,6 +1,6 @@
 # PB-025: EPUB Navigation Support
 
-**Status:** Active
+**Status:** Complete (2026-05-06)
 **Date:** 2026-05-06
 **Design Started:** 2026-05-06
 **Branch:** `pb-025-epub-navigation-support`
@@ -20,12 +20,12 @@ Adding multi-section EPUB support means the reader sees a proper TOC, can tap a 
 
 ## Acceptance Criteria
 
-- [ ] Multi-section documents are detected: a document is considered multi-section when its heading structure yields more than one logical chapter entry
-- [ ] Chapter splitting works correctly: each chapter contains the right content and headings, with no content lost or duplicated
-- [ ] HTML `id` attributes are preserved on heading elements so in-document anchor links continue to work after splitting
-- [ ] `MarkdownEpubConverter` respects chapter structure: multi-section documents produce a multi-chapter EPUB; single-section documents are unchanged
-- [ ] No regression in existing tests; new tests cover section detection, splitting logic, and id-attribute preservation
-- [ ] TypeScript compiles with zero errors in strict mode
+- [x] Multi-section documents are detected: a document is considered multi-section when its heading structure yields more than one logical chapter entry (`isMultiSection()` returns true for N > 1 TOC entries)
+- [x] Chapter splitting works correctly: each chapter contains the right content and headings, with no content lost or duplicated (`splitIntoChapters()` verified with 16 tests covering two/three chapters, trailing content, empty chapters)
+- [x] HTML `id` attributes are preserved on heading elements so in-document anchor links continue to work after splitting (`id` added to `allowedAttributes` in sanitizeHtml config; verified with test)
+- [x] `MarkdownEpubConverter` respects chapter structure: multi-section documents produce a multi-chapter EPUB; single-section documents are unchanged (wired in Task 4; verified with 3 integration tests)
+- [x] No regression in existing tests; new tests cover section detection, splitting logic, and id-attribute preservation (404 tests pass, 39 new tests added across 4 tasks)
+- [x] TypeScript compiles with zero errors in strict mode (verified after each commit)
 
 ## Out of Scope
 
