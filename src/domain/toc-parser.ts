@@ -47,7 +47,7 @@ function extractId(attrs: string): string {
  * Used to get the plain-text label of a heading.
  */
 function stripTags(html: string): string {
-  return html.replace(/<[^>]+>/g, "").trim();
+  return html.replaceAll(/<[^>]+>/g, "").trim();
 }
 
 /**

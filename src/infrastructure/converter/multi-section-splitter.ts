@@ -88,12 +88,73 @@ const CHAPTER_BOUNDARY_RE =
 // Matches an <hr> element (self-closing or paired, any attributes)
 const HR_RE = /<hr\s*\/?>/i;
 
-/**
- * Extracts inner text from an HTML heading tag by stripping all tags.
- * e.g. "<h1>Hello <em>World</em></h1>" → "Hello World"
- */
+interface BoundaryInfo {
+  anchorId: string;
+  h1Html: string;
+  fullMatchLength: number;
+  startIndex: number;
+}
+
 function extractHeadingText(h1Html: string): string {
-  return h1Html.replace(/<[^>]+>/g, "").trim();
+  return h1Html.replaceAll(/<[^>]+>/g, "").trim();
+}
+
+function findBoundaries(body: string): BoundaryInfo[] {
+  const boundaries: BoundaryInfo[] = [];
+  CHAPTER_BOUNDARY_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = CHAPTER_BOUNDARY_RE.exec(body)) !== null) {
+    const anchorId = m[1];
+    const h1Html = m[2] ?? "";
+    if (anchorId !== undefined) {
+      boundaries.push({
+        anchorId,
+        h1Html,
+        fullMatchLength: m[0].length,
+        startIndex: m.index,
+      });
+    }
+  }
+  return boundaries;
+}
+
+function resolveChapterTitle(
+  anchorId: string,
+  h1Html: string,
+  manifestByAnchor: Map<string, string>,
+  matchedAnchorIds: Set<string>,
+  warnings: string[],
+): string {
+  const manifestTitle = manifestByAnchor.get(anchorId);
+  if (manifestTitle !== undefined) {
+    matchedAnchorIds.add(anchorId);
+    return manifestTitle;
+  }
+  if (h1Html.length > 0) {
+    const title = extractHeadingText(h1Html);
+    warnings.push(
+      `Chapter anchor "${anchorId}" not found in TOC manifest; using H1 text "${title}" as fallback`,
+    );
+    return title;
+  }
+  warnings.push(
+    `Chapter anchor "${anchorId}" not found in TOC manifest and no H1 present; using "Untitled"`,
+  );
+  return "Untitled";
+}
+
+function warnUnmatchedManifest(
+  manifest: TocEntry[],
+  matchedAnchorIds: Set<string>,
+  warnings: string[],
+): void {
+  for (const entry of manifest) {
+    if (!matchedAnchorIds.has(entry.anchorId)) {
+      warnings.push(
+        `TOC manifest entry "${entry.title}" (anchor "#${entry.anchorId}") not found in HTML`,
+      );
+    }
+  }
 }
 
 /**
@@ -122,103 +183,51 @@ export function splitIntoChapters(
 ): SplitResult {
   const warnings: string[] = [];
 
-  // Step 1: Drop front-matter (everything up to and including the first <hr>)
   const hrMatch = HR_RE.exec(html);
   const body = hrMatch
     ? html.slice(hrMatch.index + hrMatch[0].length)
     : html;
 
-  // Step 2: Find all chapter boundary positions
-  // Each boundary: { anchorId, h1Html, startIndex (of the <a> tag) }
-  interface BoundaryInfo {
-    anchorId: string;
-    h1Html: string;
-    fullMatchLength: number;
-    startIndex: number;
-  }
-
-  const boundaries: BoundaryInfo[] = [];
-  CHAPTER_BOUNDARY_RE.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = CHAPTER_BOUNDARY_RE.exec(body)) !== null) {
-    const anchorId = m[1];
-    const h1Html = m[2] ?? "";
-    if (anchorId !== undefined) {
-      boundaries.push({
-        anchorId,
-        h1Html,
-        fullMatchLength: m[0].length,
-        startIndex: m.index,
-      });
-    }
-  }
+  const boundaries = findBoundaries(body);
 
   if (boundaries.length === 0) {
-    // Fallback: return entire HTML as one untitled chapter with a warning
-    warnings.push("No chapter boundaries (<a id=\"...\"> anchors) found in HTML; falling back to single chapter");
+    warnings.push(
+      `No chapter boundaries (<a id="..."> anchors) found in HTML; falling back to single chapter`,
+    );
     return {
       chapters: [{ title: manifest[0]?.title ?? "Untitled", anchorId: "", html: body }],
       warnings,
     };
   }
 
-  // Build manifest lookup: anchorId → title
   const manifestByAnchor = new Map<string, string>(
     manifest.map((e) => [e.anchorId, e.title]),
   );
-
-  // Track which manifest entries were matched
   const matchedAnchorIds = new Set<string>();
-
-  // Step 3: Slice HTML at each boundary
   const chapters: SplitChapter[] = [];
 
-  for (let i = 0; i < boundaries.length; i++) {
-    const current = boundaries[i];
-    if (current === undefined) continue;
-
+  for (const [i, current] of boundaries.entries()) {
     const next = boundaries[i + 1];
-
-    // Chapter HTML starts after the <a id> + <h1> match
     const contentStart = current.startIndex + current.fullMatchLength;
-    const contentEnd = next !== undefined ? next.startIndex : body.length;
-
+    const contentEnd = next === undefined ? body.length : next.startIndex;
     const chapterContent = body.slice(contentStart, contentEnd).trim();
 
-    // Reconstruct the anchor tag (retain it; H1 is already excluded by the regex)
     const anchorTag = `<a id="${current.anchorId}"></a>`;
+    const chapterHtml =
+      chapterContent.length > 0 ? `${anchorTag}\n${chapterContent}` : anchorTag;
 
-    const chapterHtml = chapterContent.length > 0
-      ? `${anchorTag}\n${chapterContent}`
-      : anchorTag;
-
-    // Step 4: Resolve title (manifest → h1 text → "Untitled")
-    let title = manifestByAnchor.get(current.anchorId);
-    if (title !== undefined) {
-      matchedAnchorIds.add(current.anchorId);
-    } else if (current.h1Html.length > 0) {
-      title = extractHeadingText(current.h1Html);
-      warnings.push(
-        `Chapter anchor "${current.anchorId}" not found in TOC manifest; using H1 text "${title}" as fallback`,
-      );
-    } else {
-      title = "Untitled";
-      warnings.push(
-        `Chapter anchor "${current.anchorId}" not found in TOC manifest and no H1 present; using "Untitled"`,
-      );
-    }
+    const title = resolveChapterTitle(
+      current.anchorId,
+      current.h1Html,
+      manifestByAnchor,
+      matchedAnchorIds,
+      warnings,
+    );
 
     chapters.push({ title, anchorId: current.anchorId, html: chapterHtml });
   }
 
-  // Step 5: Warn about manifest entries not matched in the HTML
-  for (const entry of manifest) {
-    if (!matchedAnchorIds.has(entry.anchorId)) {
-      warnings.push(
-        `TOC manifest entry "${entry.title}" (anchor "#${entry.anchorId}") not found in HTML`,
-      );
-    }
-  }
+  warnUnmatchedManifest(manifest, matchedAnchorIds, warnings);
 
   return { chapters, warnings };
 }

@@ -26,7 +26,7 @@ export type ChapterSlice = { title: string; html: string };
  * Used for text-based heading lookup when no `id` attribute is available.
  */
 function stripTags(html: string): string {
-  return html.replace(/<[^>]+>/g, "").trim();
+  return html.replaceAll(/<[^>]+>/g, "").trim();
 }
 
 /**
@@ -44,16 +44,16 @@ function findHeadingIndex(html: string, entry: TocEntry): number {
     // Locate opening tag that contains id="<entry.id>" for this tag level.
     // Build a pattern that matches <h1 ... id="intro" ...> (id anywhere in attrs).
     const idPattern = new RegExp(
-      `<${entry.tag}\\b[^>]*\\bid\\s*=\\s*"${escapeRegExp(entry.id)}"[^>]*>`,
+      String.raw`<${entry.tag}\b[^>]*\bid\s*=\s*"${escapeRegExp(entry.id)}"[^>]*>`,
       "i",
     );
     const match = idPattern.exec(html);
-    return match !== null ? match.index : -1;
+    return match === null ? -1 : match.index;
   }
 
   // No id: find by tag level + text content match
   const scanPattern = new RegExp(
-    `<${entry.tag}\\b[^>]*>([\\s\\S]*?)<\\/${entry.tag}>`,
+    String.raw`<${entry.tag}\b[^>]*>([\s\S]*?)<\/${entry.tag}>`,
     "gi",
   );
 
@@ -73,7 +73,7 @@ function findHeadingIndex(html: string, entry: TocEntry): number {
  * embedded in a RegExp pattern.
  */
 function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 /**
@@ -126,7 +126,7 @@ export function splitIntoChapters(
     }
 
     const start = current.index;
-    const end = next !== undefined ? next.index : html.length;
+    const end = next === undefined ? html.length : next.index;
     let fragment = html.slice(start, end);
 
     // Strip the opening heading tag so it's not duplicated when epub-gen-memory
