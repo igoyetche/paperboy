@@ -1,9 +1,10 @@
 # PB-026: Redesigned Thumbnail Rendering — Design
 
-**Status:** Draft
+**Status:** Complete — Updated During Implementation
 **Date:** 2026-05-06
-**Spec:** docs/specs/main-spec.md (FR-37 will be updated)
-**Feature:** docs/features/active/PB-026-redesigned-thumbnail-rendering.md
+**Completed:** 2026-05-07
+**Spec:** docs/specs/main-spec.md (FR-36, FR-37, FR-38, FR-39 updated)
+**Feature:** docs/features/done/PB-026-2026-05-07-redesigned-thumbnail-rendering.md
 
 ## Summary
 

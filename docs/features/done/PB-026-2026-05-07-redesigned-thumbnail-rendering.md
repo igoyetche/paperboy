@@ -1,7 +1,8 @@
 # PB-026: Redesigned Thumbnail Rendering
 
-**Status:** Backlog
+**Status:** Complete
 **Date:** 2026-05-06
+**Completed:** 2026-05-07
 
 ## Motivation
 

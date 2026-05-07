@@ -4,6 +4,34 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-05-07 — PB-026: Redesigned Thumbnail Rendering — Complete
+
+### Feature Completed
+
+Replaced the hand-authored SVG thumbnail pipeline with Satori-based HTML/CSS rendering and introduced a cover flavor system. The Kindle library thumbnail is now authored as a flexbox node tree in `flavors/classic/thumbnail.ts`; Satori converts it to SVG, and `sharp` rasterizes to JPEG — no manual coordinate math. The cover chapter HTML/CSS moves into the same flavor folder, keeping the two artifacts visually consistent.
+
+**New capabilities:**
+- **Flavor system**: `src/infrastructure/converter/flavors/` — a static registry of named visual identities. Each flavor provides three co-located templates: thumbnail builder, chapter HTML, and chapter CSS. Adding a second flavor requires one folder + one registry line.
+- **Resolution selection**: Three Kindle screen sizes supported — `1264×1680` (default), `1072×1448`, `600×800` — selectable via `PAPERBOY_COVER_RESOLUTION` env var. Default raised from 600×900 to 1264×1680 to match modern Paperwhite/Oasis screens.
+- **Active flavor**: Selected via `PAPERBOY_COVER_FLAVOR` env var (default `classic`). Unknown flavor or resolution fails at startup with a `ConfigError`.
+
+**Implementation:**
+- `cover-templates.ts` deleted; all content moved into `flavors/classic/`
+- `domain/ports.ts` gains `CoverFlavor`, `ThumbnailInput`, `ChapterInput`, `SatoriNode`, `SatoriStyle`
+- `domain/values/cover-resolution.ts` defines the resolution value type
+- `config.ts` validates both new env vars at startup
+- Composition roots (`index.ts`, `cli-entry.ts`, `watch-entry.ts`) resolve flavor + resolution from config
+- Font (Source Serif 4 regular) bundled in `assets/fonts/`; `verify-assets.mjs` postbuild guard added
+- Tests: 443 passing across 37 files (up from 337)
+
+### Design Deviation — FR-37: Source domain removed from `classic` chapter
+
+The original FR-37 required the cover chapter to display the source domain when a frontmatter `url` is present. During implementation the `classic` flavor's chapter template was aligned visually with the thumbnail, which does not display the source domain. The `classic` flavor now renders title and author only; `ChapterInput.sourceDomain` is still passed to every flavor template so a future flavor can opt in.
+
+**FR-37 updated in spec** to reflect that source domain display is flavor-determined, not universally required.
+
+---
+
 ## 2026-05-07 — PB-025: EPUB Navigation Support — spec updated
 
 ### Spec Changes (`docs/specs/main-spec.md`)

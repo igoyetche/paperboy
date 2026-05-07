@@ -7,7 +7,6 @@
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
 |------|---------|---|---|---|---|
-| PB-026 | Redesigned Thumbnail Rendering | Plan | specs/main-spec.md | plans/backlog/PB-026-redesigned-thumbnail-rendering.md | Medium |
 | PB-023 | Fix SonarQube Open Issues | 🔄 In Progress | — | — | Medium |
 | PB-018 | Markdown Frontmatter Metadata | 🔄 In Progress | specs/main-spec.md | plans/active/PB-018-markdown-frontmatter-metadata.md | Medium |
 | PB-008 | EPUB Cover Generation | 🔄 In Progress | specs/main-spec.md | plans/active/PB-008-epub-cover.md, plans/active/PB-008-bugfix-cover-image-ordering.md | Medium |
@@ -26,6 +25,7 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
+| PB-026 | Redesigned Thumbnail Rendering | specs/main-spec.md | 2026-05-07 | plans/done/PB-026-2026-05-07-redesigned-thumbnail-rendering.md |
 | PB-025 | EPUB Navigation Support | specs/main-spec.md | 2026-05-07 | plans/done/PB-025-2026-05-06-epub-navigation-support.md |
 | PB-022 | Fix: Missing asset copy in build | — | 2026-04-22 | — |
 | PB-021 | Fix: SonarQube ReDoS vulnerability in EPUB validator | — | 2026-04-22 | — |
