@@ -262,6 +262,44 @@ describe("MarkdownEpubConverter", () => {
     expect(contentChapterHtml).not.toContain("data:image/");
   });
 
+  it("preserves id attributes on heading tags after sanitization", async () => {
+    // Inline HTML with an explicit id — marked passes it through unchanged;
+    // sanitize-html must NOT strip the id attribute (FR-* PB-025).
+    const result = await converter.toEpub(
+      makeTitle("Navigation Test"),
+      makeDocument('<h2 id="section-1">Section 1</h2>\n\nSome content.'),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Conversion failed: ${result.error.message}`);
+    }
+
+    // Extract the content chapter from the EPUB ZIP and verify id is preserved
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(result.value.buffer);
+
+    const chapterPaths = Object.keys(loadedZip.files).filter((path) =>
+      /OEBPS\/\d+_.*\.xhtml$/.test(path),
+    );
+    expect(chapterPaths.length).toBeGreaterThanOrEqual(1);
+
+    let foundId = false;
+    for (const chapterPath of chapterPaths) {
+      const file = loadedZip.file(chapterPath);
+      if (file) {
+        const html = await file.async("string");
+        if (html.includes('id="section-1"')) {
+          foundId = true;
+          break;
+        }
+      }
+    }
+
+    expect(foundId).toBe(true);
+  });
+
   it("preserves original image URLs in HTML during processing (not replaced with data URIs)", async () => {
     const testImageBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 
@@ -290,5 +328,213 @@ describe("MarkdownEpubConverter", () => {
 
     expect(result.ok).toBe(true);
     expect(mockImageProcessorWithImages.process).toHaveBeenCalled();
+  });
+
+  // FR-25 (PB-025): Multi-section integration tests
+
+  it("single-section document (one h2 heading) follows unchanged single-chapter path", async () => {
+    // A document with only one section should NOT trigger multi-section splitting.
+    // The resulting EPUB should contain exactly one content chapter (plus cover).
+    const singleSectionMd = [
+      "## Introduction",
+      "",
+      "This is the only section. No TOC block present.",
+    ].join("\n");
+
+    const result = await converter.toEpub(
+      makeTitle("Single Section Book"),
+      makeDocument(singleSectionMd),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Conversion failed: ${result.error.message}`);
+    }
+
+    // The EPUB should be a valid ZIP with content
+    expect(result.value.sizeBytes).toBeGreaterThan(0);
+    expect(result.value.buffer[0]).toBe(0x50); // P (ZIP magic bytes)
+    expect(result.value.buffer[1]).toBe(0x4b); // K
+
+    // Inspect the EPUB — single-section path should NOT produce section-N.xhtml files
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(result.value.buffer);
+
+    // Verify no section-N.xhtml files exist (those are only created for multi-section)
+    const sectionFiles = Object.keys(loadedZip.files).filter((path) =>
+      /OEBPS\/section-\d+\.xhtml$/.test(path),
+    );
+    expect(sectionFiles.length).toBe(0);
+  });
+
+  it("multi-section Markdown (3 sections with TOC block) produces EpubDocument with multiple chapters", async () => {
+    // A document with a TOC block listing 3 anchored sections should trigger
+    // multi-section splitting, producing one EPUB chapter per section.
+    const multiSectionMd = [
+      "## Table of Contents",
+      "- [Chapter One](#ch-1)",
+      "- [Chapter Two](#ch-2)",
+      "- [Chapter Three](#ch-3)",
+      "",
+      "---",
+      "",
+      '<a id="ch-1"></a>',
+      "",
+      "# Chapter One",
+      "",
+      "Content for chapter one. This section covers the first topic.",
+      "",
+      '<a id="ch-2"></a>',
+      "",
+      "# Chapter Two",
+      "",
+      "Content for chapter two. This section covers the second topic.",
+      "",
+      '<a id="ch-3"></a>',
+      "",
+      "# Chapter Three",
+      "",
+      "Content for chapter three. This section covers the third topic.",
+    ].join("\n");
+
+    const result = await converter.toEpub(
+      makeTitle("Multi Section Book"),
+      makeDocument(multiSectionMd),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Conversion failed: ${result.error.message}`);
+    }
+
+    // Should be a valid EPUB buffer
+    expect(result.value.sizeBytes).toBeGreaterThan(0);
+    expect(result.value.buffer[0]).toBe(0x50);
+    expect(result.value.buffer[1]).toBe(0x4b);
+
+    // Inspect the EPUB ZIP for section-N.xhtml files (one per chapter)
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(result.value.buffer);
+
+    const sectionFiles = Object.keys(loadedZip.files).filter((path) =>
+      /OEBPS\/section-\d+\.xhtml$/.test(path),
+    );
+
+    // Should have exactly 3 section xhtml files
+    expect(sectionFiles.length).toBe(3);
+
+    // Verify section files exist and have content
+    for (const sectionPath of sectionFiles) {
+      const file = loadedZip.file(sectionPath);
+      expect(file).not.toBeNull();
+      if (file) {
+        const content = await file.async("string");
+        expect(content.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("single-section document omits toc.xhtml from EPUB spine", async () => {
+    const result = await converter.toEpub(
+      makeTitle("Single Article"),
+      makeDocument("# Introduction\n\nThis is a single-section article."),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(`Conversion failed: ${result.error.message}`);
+
+    const loadedZip = await new JSZip().loadAsync(result.value.buffer);
+    const opfFile = loadedZip.file("OEBPS/content.opf");
+    expect(opfFile).not.toBeNull();
+    if (!opfFile) throw new Error("content.opf not found in EPUB");
+
+    const opf = await opfFile.async("string");
+    const spineMatch = /<spine[\s\S]*?>([\s\S]*?)<\/spine>/.exec(opf);
+    expect(spineMatch).not.toBeNull();
+    const spine = spineMatch?.[1] ?? "";
+
+    expect(spine).not.toContain('idref="toc"');
+  });
+
+  it("multi-section document includes toc.xhtml in EPUB spine", async () => {
+    const multiSectionMd = [
+      "## Table of Contents",
+      "- [Part One](#p-1)",
+      "- [Part Two](#p-2)",
+      "",
+      "---",
+      "",
+      '<a id="p-1"></a>',
+      "",
+      "# Part One",
+      "",
+      "Content for part one.",
+      "",
+      '<a id="p-2"></a>',
+      "",
+      "# Part Two",
+      "",
+      "Content for part two.",
+    ].join("\n");
+
+    const result = await converter.toEpub(
+      makeTitle("Multi Section Book"),
+      makeDocument(multiSectionMd),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(`Conversion failed: ${result.error.message}`);
+
+    const loadedZip = await new JSZip().loadAsync(result.value.buffer);
+    const opfFile = loadedZip.file("OEBPS/content.opf");
+    expect(opfFile).not.toBeNull();
+    if (!opfFile) throw new Error("content.opf not found in EPUB");
+
+    const opf = await opfFile.async("string");
+    const spineMatch = /<spine[\s\S]*?>([\s\S]*?)<\/spine>/.exec(opf);
+    expect(spineMatch).not.toBeNull();
+    const spine = spineMatch?.[1] ?? "";
+
+    expect(spine).toContain('idref="toc"');
+  });
+
+  it("preserves id attribute on anchor tags (<a id=...>) after sanitization (FR-25)", async () => {
+    // Inline <a id="anchor"> tags must survive sanitize-html so that the
+    // chapter splitter can locate chapter boundaries in the processed HTML.
+    const result = await converter.toEpub(
+      makeTitle("Anchor Preservation Test"),
+      makeDocument('<a id="chapter-1"></a>\n\n# Chapter One\n\nSome content here.'),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`Conversion failed: ${result.error.message}`);
+    }
+
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(result.value.buffer);
+
+    const allXhtmlPaths = Object.keys(loadedZip.files).filter((path) =>
+      /OEBPS\/.*\.xhtml$/.test(path),
+    );
+
+    let foundAnchorId = false;
+    for (const path of allXhtmlPaths) {
+      const file = loadedZip.file(path);
+      if (file) {
+        const html = await file.async("string");
+        if (html.includes('id="chapter-1"')) {
+          foundAnchorId = true;
+          break;
+        }
+      }
+    }
+
+    expect(foundAnchorId).toBe(true);
   });
 });

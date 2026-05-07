@@ -1,7 +1,7 @@
 # Paperboy — System Spec
 
-> Last updated: 2026-04-10
-> Status: Implemented (PB-018 in progress)
+> Last updated: 2026-05-07
+> Status: Implemented
 
 ## 1. Problem Statement
 
@@ -76,12 +76,16 @@ A user working with an AI assistant (Claude) frequently generates long-form cont
 ### Content Conversion
 
 > Updated 2026-04-15 via feature: PB-008
+> Updated 2026-05-07 via feature: PB-025
 
 - **FR-4**: The system must convert Markdown input to a valid EPUB document
-- **FR-5**: The EPUB output must be a valid EPUB 3.0 package containing title and author metadata, a cover image, a cover chapter, and a content chapter
+- **FR-5**: The EPUB output must be a valid EPUB 3.0 package containing title and author metadata, a cover image, a cover chapter, and one or more content chapters (see FR-38)
 - **FR-36**: Every EPUB produced by the system must include a cover image (JPEG, 600×900 px) embedded in the EPUB manifest for display as a library thumbnail in Kindle. The cover is generated automatically from the document title and author — no user-supplied image or configuration is required.
 - **FR-37**: Every EPUB produced by the system must include a styled cover chapter as the first page of the document. The cover chapter displays: the paperboy icon, the document title, the author, and — when a `url` field is present in frontmatter — the source domain (hostname only, e.g., `theverge.com`). The source domain is not displayed on the cover image thumbnail.
 - **FR-6**: The EPUB output must preserve Markdown structure (headings, lists, emphasis, code blocks, links) as semantically appropriate EPUB/XHTML markup
+- **FR-38**: A document is classified as **multi-section** when its rendered HTML contains two or more headings at the minimum heading level present (e.g., if any `<h1>` exists, only `<h1>` elements are counted; otherwise `<h2>`, and so on). A document with zero or one top-level heading is **single-section**. Single-section documents are produced as a single EPUB content chapter. Multi-section documents are split into one EPUB content chapter per top-level heading, enabling Kindle's "Go To" navigation to list each section independently.
+- **FR-39**: For multi-section documents, each EPUB chapter must carry the heading's text as its title, and its content must span from that heading element (exclusive — the heading tag is stripped to avoid duplication, since epub-gen-memory prepends the chapter title) to the start of the next top-level heading. The last chapter captures all remaining content.
+- **FR-40**: The auto-generated EPUB Table of Contents page (`toc.xhtml`) must be included in the EPUB reading spine only for multi-section documents, so that Kindle's navigation lists it as an entry. For single-section documents, `toc.xhtml` must be excluded from the reading spine (the file remains in the EPUB manifest, as required by the EPUB 3 spec, but is not part of the reading order and does not appear in Kindle navigation).
 
 ### Image Handling
 
