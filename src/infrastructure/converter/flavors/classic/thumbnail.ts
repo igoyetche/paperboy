@@ -116,13 +116,24 @@ export function buildThumbnail(input: ThumbnailInput): SatoriNode {
     },
   };
 
-  // Build children list
-  const children: SatoriNode[] = [
-    kickerNode,
-    ...titleLineNodes,
-    ruleNode,
-    authorNode,
-  ];
+  // Wrap text content (kicker, title, rule, author) in a flex: 1 container
+  // so it stays at the top and the icon stays at the bottom
+  const contentNode: SatoriNode = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex" as const,
+        flexDirection: "column" as const,
+        alignItems: "center" as const,
+        flex: 1,
+        justifyContent: "flex-start" as const,
+      },
+      children: [kickerNode, ...titleLineNodes, ruleNode, authorNode],
+    },
+  };
+
+  // Build children list: content wrapper + optional icon
+  const children: SatoriNode[] = [contentNode];
 
   // Append icon node only when a data URI is provided
   if (iconDataUri !== undefined) {
@@ -146,6 +157,7 @@ export function buildThumbnail(input: ThumbnailInput): SatoriNode {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        justifyContent: "space-between",
         width,
         height,
         backgroundColor: COLORS.background,
