@@ -1,7 +1,7 @@
 ---
 title: High Agency in 30 Minutes - George Mack
 url: https://www.highagency.com/
-date: 2026-04-08
+date: 2026-05-07
 ---
 **Warning: This is not doom scrolling.** It’s an idea so simple yet effective it may change how you view reality.
 
@@ -223,7 +223,7 @@ Dylan replied: _“Fifteen minutes”_
 
 If you dig deep enough under low agency thinking, you often discover a belief in a god-like adult class that is superior to them. There’s a Peter Pan perception of reality that has been frozen in time from childhood. The fictional beliefs of Santa and the Tooth Fairy were debugged – but a belief in a perfect group of adults who run the world still remains.
 
-A low agency trap is to put these "adults" on pedestals. To turn flawed humans into a superior god class. 
+A low agency trap is to put these "adults" on pedestal. To turn flawed humans into a superior god class.
 
 If you meet your heroes or read their biographies, you discover Superman is often Clark Kent. The movie studio of your mind placed this imperfect human on a flawless pedastal. 
 
@@ -827,16 +827,6 @@ Elon Musk proposed to George Hotz the following to build vision system for Tesla
 $12 million payment if it was delivered the next day. For every month that passes where it's not delivered, the payment would be reduced by $1 million.
 
 If you had an incentive scheme where dollars disappear like a ticking clock each minute, would you need motivation to take action?
-
-**B. The Tattoo**
-
-Mr. Beast and his friend were regularly skipping workouts so they created a bet:
-
-If one of them skipped a workout -- they had to get a tattoo of the other person.
-
-Guess how many workouts they skipped that year? Zero.
-
-Discipline is a candle flame to action. Incentives and consequences are a nuclear reactor to action.
 
 Have agency over your action and design incentives and consequences for not taking action: Set a public deadline. Invite people to the diary event. Bet on yourself.
 
