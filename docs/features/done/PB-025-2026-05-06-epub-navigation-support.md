@@ -26,6 +26,7 @@ Adding multi-section EPUB support means the reader sees a proper TOC, can tap a 
 - [x] `MarkdownEpubConverter` respects chapter structure: multi-section documents produce a multi-chapter EPUB; single-section documents are unchanged (wired in Task 4; verified with 3 integration tests)
 - [x] No regression in existing tests; new tests cover section detection, splitting logic, and id-attribute preservation (404 tests pass, 39 new tests added across 4 tasks)
 - [x] TypeScript compiles with zero errors in strict mode (verified after each commit)
+- [x] Verified on a real Kindle device (2026-05-07) — multi-section "Go To" navigation lists each section; single-section articles produce no TOC page in the reading spine
 
 ## Out of Scope
 

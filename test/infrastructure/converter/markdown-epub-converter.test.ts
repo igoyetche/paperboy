@@ -436,6 +436,72 @@ describe("MarkdownEpubConverter", () => {
     }
   });
 
+  it("single-section document omits toc.xhtml from EPUB spine", async () => {
+    const result = await converter.toEpub(
+      makeTitle("Single Article"),
+      makeDocument("# Introduction\n\nThis is a single-section article."),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(`Conversion failed: ${result.error.message}`);
+
+    const loadedZip = await new JSZip().loadAsync(result.value.buffer);
+    const opfFile = loadedZip.file("OEBPS/content.opf");
+    expect(opfFile).not.toBeNull();
+    if (!opfFile) throw new Error("content.opf not found in EPUB");
+
+    const opf = await opfFile.async("string");
+    const spineMatch = /<spine[\s\S]*?>([\s\S]*?)<\/spine>/.exec(opf);
+    expect(spineMatch).not.toBeNull();
+    const spine = spineMatch?.[1] ?? "";
+
+    expect(spine).not.toContain('idref="toc"');
+  });
+
+  it("multi-section document includes toc.xhtml in EPUB spine", async () => {
+    const multiSectionMd = [
+      "## Table of Contents",
+      "- [Part One](#p-1)",
+      "- [Part Two](#p-2)",
+      "",
+      "---",
+      "",
+      '<a id="p-1"></a>',
+      "",
+      "# Part One",
+      "",
+      "Content for part one.",
+      "",
+      '<a id="p-2"></a>',
+      "",
+      "# Part Two",
+      "",
+      "Content for part two.",
+    ].join("\n");
+
+    const result = await converter.toEpub(
+      makeTitle("Multi Section Book"),
+      makeDocument(multiSectionMd),
+      makeAuthor("Claude"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(`Conversion failed: ${result.error.message}`);
+
+    const loadedZip = await new JSZip().loadAsync(result.value.buffer);
+    const opfFile = loadedZip.file("OEBPS/content.opf");
+    expect(opfFile).not.toBeNull();
+    if (!opfFile) throw new Error("content.opf not found in EPUB");
+
+    const opf = await opfFile.async("string");
+    const spineMatch = /<spine[\s\S]*?>([\s\S]*?)<\/spine>/.exec(opf);
+    expect(spineMatch).not.toBeNull();
+    const spine = spineMatch?.[1] ?? "";
+
+    expect(spine).toContain('idref="toc"');
+  });
+
   it("preserves id attribute on anchor tags (<a id=...>) after sanitization (FR-25)", async () => {
     // Inline <a id="anchor"> tags must survive sanitize-html so that the
     // chapter splitter can locate chapter boundaries in the processed HTML.

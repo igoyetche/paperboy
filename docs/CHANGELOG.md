@@ -4,6 +4,19 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-05-07 — PB-025: EPUB Navigation Support — spec updated
+
+### Spec Changes (`docs/specs/main-spec.md`)
+- **FR-5** updated: broadened "a content chapter" → "one or more content chapters" to cover multi-section documents.
+- **FR-38** added: defines the multi-section detection rule — two or more headings at the minimum heading level present triggers chapter splitting; zero or one heading stays single-chapter.
+- **FR-39** added: specifies per-chapter content boundaries and heading-stripping behaviour for multi-section EPUBs.
+- **FR-40** added: specifies TOC spine inclusion rule — `toc.xhtml` is in the reading spine only for multi-section documents; single-section documents exclude it from the spine (but keep it in the manifest as required by EPUB 3).
+
+### Implementation note
+The `tocInTOC` option in epub-gen-memory controls Kindle navigation visibility, but the library unconditionally inserts `<itemref idref="toc"/>` into the reading spine. This is patched at runtime by supplying a modified `contentOPF` EJS template with the spine entry guarded by `<% if(tocInTOC){ %>`.
+
+---
+
 ## 2026-05-05 — PB-024: Documentation Improvements
 
 ### Documentation Added

@@ -46,9 +46,10 @@ T-01, T-02, T-03 → T-04 (all utilities needed before wiring)
 
 ## Acceptance Criteria Checklist (from feature doc)
 
-- [ ] Multi-section documents are detected
-- [ ] Chapter splitting is correct — no lost or duplicated content
-- [ ] HTML `id` attributes preserved on headings
-- [ ] `MarkdownEpubConverter` respects chapter structure; single-section path unchanged
-- [ ] No regression in existing tests; new tests added
-- [ ] TypeScript strict mode, zero errors
+- [x] Multi-section documents are detected
+- [x] Chapter splitting is correct — no lost or duplicated content
+- [x] HTML `id` attributes preserved on headings
+- [x] `MarkdownEpubConverter` respects chapter structure; single-section path unchanged
+- [x] No regression in existing tests; new tests added
+- [x] TypeScript strict mode, zero errors
+- [x] Verified on a real Kindle device (2026-05-07)

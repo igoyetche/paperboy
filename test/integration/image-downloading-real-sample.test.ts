@@ -103,7 +103,7 @@ describe("Image downloading with real sample file", () => {
     "High Agency article - diagnose image download failures",
     async () => {
     const samplePath = resolve(
-      "docs/md-input-samples/2026-04-08-high-agency-in-30-minutes-george-mack.md",
+      "docs/md-input-samples/2026-05-07-high-agency-in-30-minutes-george-mack.md",
     );
 
     let markdown: string;
@@ -274,7 +274,7 @@ describe("Image downloading with real sample file", () => {
     "verifies EPUB contains actual image files in OEBPS/images/ (not data URIs)",
     async () => {
       const samplePath = resolve(
-        "docs/md-input-samples/2026-04-08-high-agency-in-30-minutes-george-mack.md",
+        "docs/md-input-samples/2026-05-07-high-agency-in-30-minutes-george-mack.md",
       );
 
       let markdown: string;

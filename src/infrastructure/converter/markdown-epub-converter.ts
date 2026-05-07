@@ -21,9 +21,18 @@ import { EpubDocument } from "../../domain/values/index.js";
 import { ConversionError, type Result, ok, err } from "../../domain/errors.js";
 import type { ImageProcessor } from "./image-processor.js";
 import type { CoverGenerator } from "./cover-generator.js";
+import { optionsDefaults } from "epub-gen-memory";
 import { createEpubWithPredownloadedImages } from "./epub-with-images.js";
 import { parseTocManifest, isMultiSection } from "../../domain/toc-parser.js";
 import { splitIntoChapters } from "../../domain/chapter-splitter.js";
+
+// epub-gen-memory always puts toc.xhtml in the spine unconditionally. Patch the
+// default epub3 content.opf template so the spine entry is guarded by tocInTOC.
+// The nav document still lives in the manifest (required by EPUB3).
+const CONTENT_OPF_WITH_CONDITIONAL_TOC = (optionsDefaults(3).contentOPF ?? "").replace(
+  '        <itemref idref="toc" />',
+  '        <% if(tocInTOC){ %><itemref idref="toc" /><% } %>',
+);
 
 const ALLOWED_TAGS = [
   "h1", "h2", "h3", "h4", "h5", "h6",
@@ -148,7 +157,8 @@ export class MarkdownEpubConverter implements ContentConverter {
         author: author.value,
         cover: coverFile,
         css: coverCss,
-        needGenerateToc: isMultiSection(tocManifest),
+        tocInTOC: isMultiSection(tocManifest),
+        contentOPF: CONTENT_OPF_WITH_CONDITIONAL_TOC,
       };
 
       const epubInstance = createEpubWithPredownloadedImages(
