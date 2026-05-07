@@ -14,12 +14,12 @@ import { COLORS, TYPOGRAPHY } from "../_shared/tokens.js";
  * Returns the CSS string for the classic cover chapter and global EPUB styles.
  */
 export function buildCoverCss(): string {
-  return `body { font-family: ${TYPOGRAPHY.fontFamily}; }
-.cover { background: ${COLORS.background}; text-align: center; padding: 60px 20px; }
-.kicker { color: ${COLORS.accent}; font-size: 0.75em; font-weight: bold; letter-spacing: 0.4em; text-transform: uppercase; margin-bottom: 24px; }
-.title { color: #1a1a1a; font-size: 2.2em; font-weight: bold; line-height: 1.25; margin-bottom: 20px; }
-.rule { width: 100px; height: 2px; background: ${COLORS.accent}; margin: 0 auto 20px; }
-.author { color: #4a4a4a; font-size: 1.4em; font-style: italic; }
-.source { color: #8a7a5a; font-size: 1em; margin-top: 24px; letter-spacing: 0.2em; text-transform: uppercase; }
-hr { border: 0; border-bottom: 1px solid #dedede; margin: 60px 10%; }`;
+  return `html, body { margin: 0; padding: 0; background: ${COLORS.background}; }
+body { font-family: ${TYPOGRAPHY.fontFamily}; }
+.cover { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10% 8%; }
+.kicker { color: ${COLORS.accent}; font-size: 0.8em; font-weight: bold; letter-spacing: 0.4em; text-transform: uppercase; margin: 0 0 2em; }
+.title { color: #1a1a1a; font-size: 3.2em; font-weight: bold; line-height: 1.3; margin: 0 0 0.4em; }
+.rule { width: 5em; height: 2px; background: ${COLORS.accent}; border: none; margin: 0.8em auto 1em; }
+.author { color: #4a4a4a; font-size: 1.3em; font-style: italic; }
+hr { border: 0; border-bottom: 1px solid #dedede; margin: 3em 10%; }`;
 }

@@ -65,26 +65,6 @@ describe("CoverGenerator.generateHtmlChapter", () => {
     expect(html).toContain("Arthur Author");
   });
 
-  it("includes source domain when a valid URL is provided", () => {
-    const html = generator.generateHtmlChapter(
-      classic,
-      "Title",
-      "Claude",
-      "https://theverge.com/article/123",
-    );
-    expect(html).toContain("theverge.com");
-  });
-
-  it("omits source section when sourceUrl is undefined", () => {
-    const html = generator.generateHtmlChapter(classic, "Title", "Claude");
-    expect(html).not.toContain('class="source"');
-  });
-
-  it("omits source section when sourceUrl is malformed", () => {
-    const html = generator.generateHtmlChapter(classic, "Title", "Claude", "not-a-url");
-    expect(html).not.toContain('class="source"');
-    expect(html).not.toContain("not-a-url");
-  });
 
   it("escapes HTML special characters in title", () => {
     const html = generator.generateHtmlChapter(

@@ -29,18 +29,12 @@ function escapeXml(text: string): string {
  * in the JPEG cover thumbnail.
  */
 export function buildHtmlChapter(input: ChapterInput): string {
-  const { title, author, sourceDomain } = input;
-
-  const sourceHtml =
-    sourceDomain
-      ? `<p class="source">${escapeXml(sourceDomain)}</p>`
-      : "";
+  const { title, author } = input;
 
   return `<div class="cover">
-  <p class="kicker">Paperboy</p>
+  <p class="kicker">PAPERBOY</p>
   <h1 class="title">${escapeXml(title)}</h1>
   <div class="rule"></div>
   <p class="author">by ${escapeXml(author)}</p>
-  ${sourceHtml}
 </div>`;
 }
