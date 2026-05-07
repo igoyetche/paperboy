@@ -6,5 +6,5 @@ export const COLORS = {
 } as const;
 
 export const TYPOGRAPHY = {
-  fontFamily: "Georgia, serif",
+  fontFamily: "Source Serif 4",
 } as const;

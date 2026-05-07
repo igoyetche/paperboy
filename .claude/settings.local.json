@@ -48,7 +48,9 @@
       "Bash(npm run *)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(echo \"✓ Exit code: $?\")",
-      "Bash(echo \"✗ Exit code: $?\")"
+      "Bash(echo \"✗ Exit code: $?\")",
+      "Bash(UPDATE_COVER_FIXTURE=1 npm test -- src/infrastructure/converter/flavors)",
+      "Bash(UPDATE_COVER_FIXTURE=1 npm test -- test/infrastructure/converter/cover-generator.test.ts)"
     ],
     "defaultMode": "acceptEdits"
   },
