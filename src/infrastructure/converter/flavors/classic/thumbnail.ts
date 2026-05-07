@@ -59,6 +59,7 @@ export function buildThumbnail(input: ThumbnailInput): SatoriNode {
         fontFamily: TYPOGRAPHY.fontFamily,
         color: "#1a1a1a",
         lineHeight: 1.15,
+        whiteSpace: "nowrap" as const,
       },
       children: line,
     },

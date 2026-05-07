@@ -214,7 +214,7 @@ export class CoverGenerator {
    * bundled icon data URI.
    */
   buildThumbnailContent(title: string, author: string): ThumbnailContent {
-    const titleLines = wrapTitle(title, 16, 4);
+    const titleLines = wrapTitle(title, 13, 4);
     return { titleLines, author, iconDataUri: this.iconDataUri };
   }
 }
