@@ -15,7 +15,7 @@ import { COLORS, TYPOGRAPHY } from "../_shared/tokens.js";
  */
 export function buildCoverCss(): string {
   return `html, body { margin: 0; padding: 0; }
-body { font-family: ${TYPOGRAPHY.fontFamily}, serif; }
+body { font-family: "${TYPOGRAPHY.fontFamily}", serif; }
 .cover { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10% 8%; background: ${COLORS.background}; }
 .kicker { color: ${COLORS.accent}; font-size: 0.8em; font-weight: bold; letter-spacing: 0.4em; text-transform: uppercase; margin: 0 0 2em; }
 .title { color: #1a1a1a; font-size: 3.2em; font-weight: bold; line-height: 1.3; margin: 0 0 0.4em; }
