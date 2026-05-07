@@ -1,10 +1,11 @@
 # PB-025: EPUB Navigation Support — Plan
 
-**Status:** ✅ Complete (2026-05-06)
-**Feature:** docs/features/active/PB-025-epub-navigation-support.md
-**Branch:** `pb-025-epub-navigation-support`
+**Status:** ✅ Complete (2026-05-07)
+**Feature:** docs/features/done/PB-025-2026-05-06-epub-navigation-support.md
+**Branch:** `pb-025-epub-navigation-support` (merged into `pb-026-redesigned-thumbnail-rendering`)
 **Created:** 2026-05-06
 **Implementation Started:** 2026-05-06
+**Completed:** 2026-05-07
 
 ---
 
