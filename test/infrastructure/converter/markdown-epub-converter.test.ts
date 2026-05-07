@@ -8,6 +8,8 @@ import { Author } from "../../../src/domain/values/author.js";
 import { MarkdownContent } from "../../../src/domain/values/markdown-content.js";
 import { MarkdownDocument } from "../../../src/domain/values/markdown-document.js";
 import { DocumentMetadata } from "../../../src/domain/values/document-metadata.js";
+import { getFlavor } from "../../../src/infrastructure/converter/flavors/index.js";
+import { getCoverResolution } from "../../../src/domain/values/cover-resolution.js";
 
 function makeTitle(v: string) {
   const r = Title.create(v);
@@ -39,6 +41,9 @@ function makeDocument(v: string, url?: string) {
 // Minimal valid JPEG header (3 bytes) — enough to pass File wrapping
 const FAKE_JPEG = Buffer.from([0xff, 0xd8, 0xff]);
 
+const classicFlavor = getFlavor("classic");
+const defaultResolution = getCoverResolution("1264x1680");
+
 describe("MarkdownEpubConverter", () => {
   // Mock ImageProcessor that passes HTML through unchanged
   const mockImageProcessor: ImageProcessor = {
@@ -50,17 +55,27 @@ describe("MarkdownEpubConverter", () => {
     })),
   };
 
-  // Fake CoverGenerator — avoids running sharp in unit tests
+  // Fake CoverGenerator — avoids running sharp in unit tests.
+  // Methods now accept flavor and resolution as the first arguments.
   const fakeCoverGenerator: CoverGenerator = {
     // eslint-disable-next-line @typescript-eslint/require-await
     generateImage: vi.fn(async () => FAKE_JPEG),
     generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
     generateCoverCss: vi.fn(() => ".cover { color: red; }"),
-  };
+    // eslint-disable-next-line @typescript-eslint/require-await
+    generateCoverSvg: vi.fn(async () => "<svg/>"),
+    buildThumbnailContent: vi.fn((_title: string, author: string) => ({
+      titleLines: ["Test"],
+      author,
+      iconDataUri: undefined,
+    })),
+  } as unknown as CoverGenerator;
 
   const converter = new MarkdownEpubConverter(
     mockImageProcessor,
     fakeCoverGenerator,
+    classicFlavor,
+    defaultResolution,
   );
 
   it("produces an EpubDocument with correct title", async () => {
@@ -150,7 +165,7 @@ describe("MarkdownEpubConverter", () => {
     }
   });
 
-  it("calls generateImage with title and author", async () => {
+  it("calls generateImage with flavor, resolution, and thumbnail content", async () => {
     vi.clearAllMocks();
     await converter.toEpub(
       makeTitle("Cover Test"),
@@ -158,12 +173,13 @@ describe("MarkdownEpubConverter", () => {
       makeAuthor("Tester"),
     );
     expect(fakeCoverGenerator.generateImage).toHaveBeenCalledWith(
-      "Cover Test",
-      "Tester",
+      classicFlavor,
+      defaultResolution,
+      expect.objectContaining({ author: "Tester" }),
     );
   });
 
-  it("calls generateHtmlChapter with title, author, and sourceUrl from metadata", async () => {
+  it("calls generateHtmlChapter with flavor, title, author, and sourceUrl from metadata", async () => {
     vi.clearAllMocks();
     await converter.toEpub(
       makeTitle("Source Test"),
@@ -171,6 +187,7 @@ describe("MarkdownEpubConverter", () => {
       makeAuthor("Claude"),
     );
     expect(fakeCoverGenerator.generateHtmlChapter).toHaveBeenCalledWith(
+      classicFlavor,
       "Source Test",
       "Claude",
       "https://theverge.com/article/123",
@@ -196,6 +213,8 @@ describe("MarkdownEpubConverter", () => {
     const converterWithImages = new MarkdownEpubConverter(
       mockImageProcessorWithImages,
       fakeCoverGenerator,
+      classicFlavor,
+      defaultResolution,
     );
 
     const result = await converterWithImages.toEpub(
@@ -318,6 +337,8 @@ describe("MarkdownEpubConverter", () => {
     const converterWithImages = new MarkdownEpubConverter(
       mockImageProcessorWithImages,
       fakeCoverGenerator,
+      classicFlavor,
+      defaultResolution,
     );
 
     const result = await converterWithImages.toEpub(

@@ -55,4 +55,41 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-member-access": "off",
     },
   },
+  // PB-026: Flavor boundary rule — flavor template files (under flavors/<name>/, excluding
+  // _shared/) must not import Satori, sharp, or epub-gen-memory. Templates must remain
+  // renderer-agnostic so the rendering engine can be swapped without touching flavor files.
+  // Implements the boundary requirement in docs/designs/PB-026-redesigned-thumbnail-rendering/design.md.
+  {
+    files: [
+      "src/infrastructure/converter/flavors/classic/**/*.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "satori",
+              message:
+                "Flavor files must not import Satori directly. " +
+                "The CoverFlavor contract uses domain types (SatoriNode, SatoriStyle) defined in domain/ports.ts — " +
+                "the renderer (cover-generator.ts) handles Satori invocation.",
+            },
+            {
+              name: "sharp",
+              message:
+                "Flavor files must not import sharp. " +
+                "Rasterization is the renderer's responsibility (cover-generator.ts).",
+            },
+            {
+              name: "epub-gen-memory",
+              message:
+                "Flavor files must not import epub-gen-memory. " +
+                "EPUB assembly is handled outside the flavor layer.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

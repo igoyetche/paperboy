@@ -2,8 +2,13 @@ import { EmailAddress } from "../domain/values/email-address.js";
 import { KindleDevice } from "../domain/values/kindle-device.js";
 import { DeviceRegistry } from "../domain/device-registry.js";
 import { ValidationError, type Result, ok, err } from "../domain/errors.js";
+import type { FlavorName } from "./converter/flavors/index.js";
+import { isFlavorName, listFlavorNames } from "./converter/flavors/index.js";
+import type { CoverResolution } from "../domain/values/cover-resolution.js";
+import { isCoverResolutionName, getCoverResolution, listCoverResolutionNames } from "../domain/values/cover-resolution.js";
 
 /** Implements FR-4: Config interface with DeviceRegistry replacing single KINDLE_EMAIL */
+/** Implements FR-38, FR-39 (PB-026): flavor and resolution fields */
 export interface Config {
   devices: DeviceRegistry;
   sender: { email: string };
@@ -19,6 +24,10 @@ export interface Config {
     maxImageBytes: number;
     maxTotalBytes: number;
   };
+  /** Active cover flavor name (FR-38, PB-026). Defaults to "classic". */
+  defaultCoverFlavor: FlavorName;
+  /** Active cover resolution (FR-39, PB-026). Defaults to 1264x1680. */
+  coverResolution: CoverResolution;
 }
 
 function requireEnv(name: string): string {
@@ -128,6 +137,24 @@ export function loadConfig(): Config {
     ? Number(process.env.IMAGE_MAX_TOTAL_BYTES)
     : 100 * 1024 * 1024; // 100 MB
 
+  // FR-38 (PB-026): Cover flavor selection — validate PAPERBOY_COVER_FLAVOR
+  const flavorName = process.env.PAPERBOY_COVER_FLAVOR ?? "classic";
+  if (!isFlavorName(flavorName)) {
+    throw new Error(
+      `PAPERBOY_COVER_FLAVOR=${flavorName} is not a registered flavor. ` +
+      `Valid options: ${listFlavorNames().join(", ")}`,
+    );
+  }
+
+  // FR-39 (PB-026): Cover resolution selection — validate PAPERBOY_COVER_RESOLUTION
+  const resolutionName = process.env.PAPERBOY_COVER_RESOLUTION ?? "1264x1680";
+  if (!isCoverResolutionName(resolutionName)) {
+    throw new Error(
+      `PAPERBOY_COVER_RESOLUTION=${resolutionName} is not a supported resolution. ` +
+      `Valid options: ${listCoverResolutionNames().join(", ")}`,
+    );
+  }
+
   return {
     devices,
     sender: { email: senderEmailResult.value.value },
@@ -143,5 +170,7 @@ export function loadConfig(): Config {
       maxImageBytes: imageMaxImageBytes,
       maxTotalBytes: imageMaxTotalBytes,
     },
+    defaultCoverFlavor: flavorName,
+    coverResolution: getCoverResolution(resolutionName),
   };
 }
