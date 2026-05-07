@@ -16,7 +16,7 @@ import { classic } from "./classic/index.js";
  */
 const FLAVORS = {
   classic,
-} as const satisfies Record<string, CoverFlavor>;
+} satisfies Record<string, CoverFlavor>;
 
 /** Union of valid flavor name strings. */
 export type FlavorName = keyof typeof FLAVORS;
