@@ -60,6 +60,7 @@ export function buildThumbnail(input: ThumbnailInput): SatoriNode {
         color: "#1a1a1a",
         lineHeight: 1.15,
         whiteSpace: "nowrap" as const,
+        marginBottom: s(8),
       },
       children: line,
     },
