@@ -15,7 +15,6 @@
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
-| PB-025 | EPUB Navigation Support | Feature | specs/main-spec.md | — | Medium |
 | PB-020 | curl --impersonate Cloudflare Bypass | Feature | specs/PB-016-image-downloading-spec.md | — | Medium |
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
