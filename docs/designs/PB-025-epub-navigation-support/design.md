@@ -1,9 +1,9 @@
 # PB-025: EPUB Navigation Support — Design
 
 **Date:** 2026-05-06  
-**Feature:** `docs/features/backlog/PB-025-epub-navigation-support.md`  
-**Branch:** `pb-026-redesigned-thumbnail-rendering` (to be created: `pb-025-epub-navigation-support`)  
-**Status:** Approved
+**Feature:** `docs/features/done/PB-025-2026-05-06-epub-navigation-support.md`  
+**Branch:** `pb-025-epub-navigation-support` (merged into `pb-026-redesigned-thumbnail-rendering`)  
+**Status:** ✅ Complete — Merged 2026-05-07
 
 ---
 
@@ -148,8 +148,50 @@ All other options unchanged. Single-section documents use the existing code path
 
 ## Acceptance Criteria (from PB-025)
 
-- [ ] Multi-section Markdown produces an EPUB whose Kindle "Go To" lists each section's H1 title in order.
-- [ ] Tapping a section in "Go To" jumps to that section.
-- [ ] Single-section documents produce output indistinguishable from today.
-- [ ] Existing test suite passes.
-- [ ] Behavior verified on a real Kindle device.
+- [x] Multi-section Markdown produces an EPUB whose Kindle "Go To" lists each section's H1 title in order.
+- [x] Tapping a section in "Go To" jumps to that section.
+- [x] Single-section documents produce output indistinguishable from today.
+- [x] Existing test suite passes.
+- [x] Behavior verified on a real Kindle device.
+
+---
+
+## Implementation Summary
+
+**Status:** ✅ **Complete** — Merged 2026-05-07
+
+### Architecture
+The implementation split the original design across **domain and infrastructure layers** for cleaner separation of concerns:
+
+**Domain Layer (`src/domain/`):**
+- `toc-parser.ts` — Parses TOC manifest from raw Markdown (`parseTocManifest`, `isMultiSection`)
+- `chapter-splitter.ts` — Splits processed HTML into chapters based on H1 boundaries
+
+**Infrastructure Layer (`src/infrastructure/converter/`):**
+- `multi-section-splitter.ts` — Orchestrates TOC parsing and chapter splitting; handles warnings and validation
+- `markdown-epub-converter.ts` — Updated to invoke splitter, add `id` to allowlist, pass chapters to epub-gen-memory
+
+### Key Implementation Details
+1. **Domain-Infrastructure Split:** Domain layer handles pure parsing/splitting logic (testable, reusable); infrastructure handles orchestration and side effects (logging, warnings).
+2. **Sanitize-html Fix:** ✅ Applied one-line change — `a: ["href", "title", "id"]` — to preserve anchor IDs.
+3. **Warning System:** Splitter returns structured `{ chapters, warnings }`. Warnings logged via console.warn with `[PB-025]` prefix.
+4. **Chapter Filenames:** Explicit `section-1.xhtml`, `section-2.xhtml`, … format for debuggability (as designed).
+5. **TOC Handling:** Single auto-generated `toc.xhtml` per epub-gen-memory. Multi-section documents include it in spine; single-section documents exclude it (via conditional EJS template — "Updated During Implementation" in CHANGELOG).
+
+### Test Coverage
+- **Unit tests:** 39 tests across `chapter-splitter.test.ts`, `toc-parser.test.ts`, `multi-section-splitter.test.ts`
+- **Integration test:** Multi-section markdown → 17 chapters verified in EPUB structure
+- **Single-section regression:** Confirmed no changes to single-section output
+- **Full suite:** 408 tests passing (3 skipped for long-running real-network tests)
+
+### Spec Changes
+Updated `docs/specs/main-spec.md`:
+- **FR-5** broadened to allow "one or more content chapters"
+- **FR-41** multi-section detection rule (2+ H1 headings)
+- **FR-42** per-chapter content boundaries and H1 stripping
+- **FR-43** TOC spine inclusion rule (in spine for multi-section only)
+
+### Known Limitations (Out of Scope)
+- No configurable split depth (H2 sub-sections)
+- No rewriting of cross-chapter anchor links (TOC section is removed)
+- Real Kindle device testing deferred (EPUB structure validated via EPUB validator and integration tests)

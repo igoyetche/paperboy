@@ -69,19 +69,31 @@ When ALL tasks are [x] or [-]:
 
 ### Pre-PR Checklist (BEFORE creating pull request)
 
-**DO NOT create a PR until this checklist is complete. A feature is only done when documentation matches code.**
+**⚠️ HARD GATE:** Do **NOT** create or ask for a PR until this checklist is complete. A feature is only done when code AND documentation are in final state. PB-025 was merged with incomplete documentation — this gate prevents that.
 
 - [ ] **All tasks marked:** Every task in plan is [x] (done with date) or [-] (dropped with reason)
 - [ ] **Feature file updated:** Feature doc status field set to "Complete" with completion date
-- [ ] **Feature moved:** Feature file moved from `docs/features/active/[name].md` → `docs/features/done/[name]-YYYY-MM-DD-[name].md`
-- [ ] **Plan moved:** Plan file moved from `docs/plans/active/[name].md` → `docs/plans/done/[name]-YYYY-MM-DD-[name].md`
+- [ ] **Feature file moved:** `docs/features/active/[name].md` → `docs/features/done/[name]-YYYY-MM-DD-[name].md` — **verify file exists in done folder, backlog copy removed**
+- [ ] **Plan file moved:** `docs/plans/active/[name].md` → `docs/plans/done/[name]-YYYY-MM-DD-[name].md` — **verify file exists in done folder, active copy removed**
 - [ ] **STATUS.md synced:** Feature removed from "Active Work" section, added to "Completed" section with completion date
 - [ ] **CHANGELOG.md updated:** Feature completion entry added (even if no spec changes)
+- [ ] **Design doc updated:** If design changed during implementation, mark status as "Updated During Implementation" with final date; if design is unchanged, mark status as "Complete"
+- [ ] **Specs updated:** All affected specs in `docs/specs/` updated with change marker `> Updated YYYY-MM-DD via feature: [name]`
 - [ ] **Final validation:** Run `npm test` and verify all tests pass with no uncommitted changes
 - [ ] **SonarQube local scan:** Run `npm run sonar:local` and review results at https://sonarcloud.io/project/issues?id=paperboy. Resolve any bugs or vulnerabilities before creating the PR. For hotspots, confirm they are safe.
-- [ ] **Ready for PR:** All documentation reflects final state, no outstanding sync tasks
+- [ ] **Ready for PR:** All documentation reflects final state, **no outstanding sync tasks, all files in correct folders**
 
-Only after all items are checked off: create the PR.
+**VERIFICATION STEP (before asking me to create PR):**
+```bash
+# Verify file movements — each should exist exactly once:
+git ls-files docs/features/done/ | grep -E "\[feature-name\]"  # Should show 1 file
+git ls-files docs/features/active/ | grep -E "\[feature-name\]" # Should show 0 files
+git ls-files docs/plans/done/ | grep -E "\[plan-name\]"         # Should show 1 file
+git ls-files docs/plans/active/ | grep -E "\[plan-name\]"       # Should show 0 files
+git status  # Should show no uncommitted changes
+```
+
+Only after all items are checked off AND verification passes: ask me to create the PR.
 
 ### Checking a PR After Creation
 
@@ -127,7 +139,8 @@ Features, plans, and designs have explicit **status folders**. Move files betwee
 12. **Never work directly on `main`** — all feature work happens on a dedicated branch. Only commit to `main` when the user explicitly instructs you to (e.g., "commit this to main"). If you find yourself on `main` with uncommitted changes, stop and create a branch first.
 13. **Move feature to active immediately when starting design work** — design is the entry point for active work
 14. **Move plan to active immediately when starting implementation** — implementation is the entry point for active work
-15. **Never create or open a PR without asking first** — even for completed features or adjustments
+15. **Never create or open a PR without asking first** — even for completed features or adjustments. Always ask: "Ready for PR?" as the last step.
+16. **Documentation must be finalized BEFORE the PR is created** — not after. This includes: feature/plan file movements to done folders, STATUS.md and CHANGELOG.md updates, spec changes logged. (PB-025 lesson: the PR was created with incomplete documentation; enforce the gate.)
 
 ---
 

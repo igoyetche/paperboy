@@ -27,6 +27,8 @@ describe("loadConfig", () => {
       "MCP_AUTH_TOKEN",
       "LOG_LEVEL",
       "WATCH_FOLDER",
+      "PAPERBOY_COVER_FLAVOR",
+      "PAPERBOY_COVER_RESOLUTION",
     ]) {
       delete process.env[key];
     }
@@ -160,5 +162,79 @@ describe("loadConfig", () => {
     Object.assign(process.env, requiredEnv());
     const config = loadConfig();
     expect(config.watchFolder).toBeUndefined();
+  });
+
+  // ---------------------------------------------------------------------------
+  // FR-38 (PB-026): PAPERBOY_COVER_FLAVOR validation
+  // ---------------------------------------------------------------------------
+
+  it("sets defaultCoverFlavor when PAPERBOY_COVER_FLAVOR=classic", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_FLAVOR: "classic",
+    });
+    const config = loadConfig();
+    expect(config.defaultCoverFlavor).toBe("classic");
+  });
+
+  it("defaults defaultCoverFlavor to 'classic' when PAPERBOY_COVER_FLAVOR is unset", () => {
+    Object.assign(process.env, requiredEnv());
+    const config = loadConfig();
+    expect(config.defaultCoverFlavor).toBe("classic");
+  });
+
+  it("throws when PAPERBOY_COVER_FLAVOR is an unknown flavor name", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_FLAVOR: "unknown-flavor",
+    });
+    expect(() => loadConfig()).toThrow("PAPERBOY_COVER_FLAVOR=unknown-flavor");
+  });
+
+  it("throws with a message listing valid flavor names when PAPERBOY_COVER_FLAVOR is invalid", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_FLAVOR: "nonexistent",
+    });
+    expect(() => loadConfig()).toThrow("Valid options:");
+  });
+
+  // ---------------------------------------------------------------------------
+  // FR-39 (PB-026): PAPERBOY_COVER_RESOLUTION validation
+  // ---------------------------------------------------------------------------
+
+  it("sets coverResolution when PAPERBOY_COVER_RESOLUTION=1072x1448", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_RESOLUTION: "1072x1448",
+    });
+    const config = loadConfig();
+    expect(config.coverResolution.width).toBe(1072);
+    expect(config.coverResolution.height).toBe(1448);
+    expect(config.coverResolution.name).toBe("1072x1448");
+  });
+
+  it("defaults coverResolution to 1264x1680 when PAPERBOY_COVER_RESOLUTION is unset", () => {
+    Object.assign(process.env, requiredEnv());
+    const config = loadConfig();
+    expect(config.coverResolution.name).toBe("1264x1680");
+    expect(config.coverResolution.width).toBe(1264);
+    expect(config.coverResolution.height).toBe(1680);
+  });
+
+  it("throws when PAPERBOY_COVER_RESOLUTION is an unknown resolution", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_RESOLUTION: "2000x3000",
+    });
+    expect(() => loadConfig()).toThrow("PAPERBOY_COVER_RESOLUTION=2000x3000");
+  });
+
+  it("throws with a message listing valid resolution names when PAPERBOY_COVER_RESOLUTION is invalid", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_RESOLUTION: "1280x800",
+    });
+    expect(() => loadConfig()).toThrow("Valid options:");
   });
 });

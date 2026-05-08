@@ -36,7 +36,21 @@
       "Bash(tee sonar-secrets-output.txt)",
       "Bash(docker info *)",
       "Bash(where docker *)",
-      "mcp__sonarqube__search_sonar_issues_in_projects"
+      "mcp__sonarqube__search_sonar_issues_in_projects",
+      "Bash(grep -E '\\\\.\\(js|json\\)$')",
+      "Bash(cp -r dist dist-backup)",
+      "Bash(rm -rf dist)",
+      "Bash(npx eslint *)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -L \"https://www.promptingguide.ai/\")",
+      "Bash(curl -s \"https://www.promptingguide.ai/\")",
+      "Bash(npm run *)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(echo \"✓ Exit code: $?\")",
+      "Bash(echo \"✗ Exit code: $?\")",
+      "Bash(UPDATE_COVER_FIXTURE=1 npm test -- src/infrastructure/converter/flavors)",
+      "Bash(UPDATE_COVER_FIXTURE=1 npm test -- test/infrastructure/converter/cover-generator.test.ts)"
     ],
     "defaultMode": "acceptEdits"
   },

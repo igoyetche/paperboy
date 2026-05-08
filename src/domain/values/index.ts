@@ -7,3 +7,5 @@ export { EpubDocument } from "./epub-document.js";
 export { EmailAddress } from "./email-address.js";
 export { KindleDevice } from "./kindle-device.js";
 export type { ImageStats } from "./image-stats.js";
+export type { CoverResolution, CoverResolutionName } from "./cover-resolution.js";
+export { COVER_RESOLUTIONS, isCoverResolutionName, getCoverResolution, listCoverResolutionNames } from "./cover-resolution.js";

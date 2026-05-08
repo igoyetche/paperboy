@@ -4,16 +4,58 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-05-07 — PB-026: Redesigned Thumbnail Rendering — Complete
+
+### Feature Completed
+
+Replaced the hand-authored SVG thumbnail pipeline with Satori-based HTML/CSS rendering and introduced a cover flavor system. The Kindle library thumbnail is now authored as a flexbox node tree in `flavors/classic/thumbnail.ts`; Satori converts it to SVG, and `sharp` rasterizes to JPEG — no manual coordinate math. The cover chapter HTML/CSS moves into the same flavor folder, keeping the two artifacts visually consistent.
+
+**New capabilities:**
+- **Flavor system**: `src/infrastructure/converter/flavors/` — a static registry of named visual identities. Each flavor provides three co-located templates: thumbnail builder, chapter HTML, and chapter CSS. Adding a second flavor requires one folder + one registry line.
+- **Resolution selection**: Three Kindle screen sizes supported — `1264×1680` (default), `1072×1448`, `600×800` — selectable via `PAPERBOY_COVER_RESOLUTION` env var. Default raised from 600×900 to 1264×1680 to match modern Paperwhite/Oasis screens.
+- **Active flavor**: Selected via `PAPERBOY_COVER_FLAVOR` env var (default `classic`). Unknown flavor or resolution fails at startup with a `ConfigError`.
+
+**Implementation:**
+- `cover-templates.ts` deleted; all content moved into `flavors/classic/`
+- `domain/ports.ts` gains `CoverFlavor`, `ThumbnailInput`, `ChapterInput`, `SatoriNode`, `SatoriStyle`
+- `domain/values/cover-resolution.ts` defines the resolution value type
+- `config.ts` validates both new env vars at startup
+- Composition roots (`index.ts`, `cli-entry.ts`, `watch-entry.ts`) resolve flavor + resolution from config
+- Font (Source Serif 4 regular) bundled in `assets/fonts/`; `verify-assets.mjs` postbuild guard added
+- Tests: 443 passing across 37 files (up from 337)
+
+### Design Deviation — FR-37: Source domain removed from `classic` chapter
+
+The original FR-37 required the cover chapter to display the source domain when a frontmatter `url` is present. During implementation the `classic` flavor's chapter template was aligned visually with the thumbnail, which does not display the source domain. The `classic` flavor now renders title and author only; `ChapterInput.sourceDomain` is still passed to every flavor template so a future flavor can opt in.
+
+**FR-37 updated in spec** to reflect that source domain display is flavor-determined, not universally required.
+
+---
+
 ## 2026-05-07 — PB-025: EPUB Navigation Support — spec updated
 
 ### Spec Changes (`docs/specs/main-spec.md`)
 - **FR-5** updated: broadened "a content chapter" → "one or more content chapters" to cover multi-section documents.
-- **FR-38** added: defines the multi-section detection rule — two or more headings at the minimum heading level present triggers chapter splitting; zero or one heading stays single-chapter.
-- **FR-39** added: specifies per-chapter content boundaries and heading-stripping behaviour for multi-section EPUBs.
-- **FR-40** added: specifies TOC spine inclusion rule — `toc.xhtml` is in the reading spine only for multi-section documents; single-section documents exclude it from the spine (but keep it in the manifest as required by EPUB 3).
+- **FR-41** added: defines the multi-section detection rule — two or more headings at the minimum heading level present triggers chapter splitting; zero or one heading stays single-chapter.
+- **FR-42** added: specifies per-chapter content boundaries and heading-stripping behaviour for multi-section EPUBs.
+- **FR-43** added: specifies TOC spine inclusion rule — `toc.xhtml` is in the reading spine only for multi-section documents; single-section documents exclude it from the spine (but keep it in the manifest as required by EPUB 3).
 
 ### Implementation note
 The `tocInTOC` option in epub-gen-memory controls Kindle navigation visibility, but the library unconditionally inserts `<itemref idref="toc"/>` into the reading spine. This is patched at runtime by supplying a modified `contentOPF` EJS template with the spine entry guarded by `<% if(tocInTOC){ %>`.
+
+---
+
+## 2026-05-06 — PB-026: Redesigned Thumbnail Rendering — Spec update
+
+**Changed:** FR-36 — Cover thumbnail JPEG dimensions are no longer fixed at 600 × 900. They are selectable from three predefined Kindle resolutions (`1264 × 1680` default, `1072 × 1448`, `600 × 800`) via `PAPERBOY_COVER_RESOLUTION`. The implementation pipeline changes from "SVG hand-template + sharp" to "active flavor's HTML/CSS template → Satori → SVG → sharp → JPEG."
+
+**Changed:** FR-37 — Cover chapter HTML/CSS now produced by the active flavor's chapter template, not a single hard-coded template.
+
+**Added:** FR-38 — Cover flavor selection. A flavor is a registered visual identity providing thumbnail, chapter HTML, and chapter CSS templates. `PAPERBOY_COVER_FLAVOR` env var (default `classic`) selects the active flavor. Unknown flavor names fail fast at startup. One bundled flavor (`classic`) ships with the feature; adding new flavors is a single-file addition plus one registry line.
+
+**Added:** FR-39 — Cover resolution selection. `PAPERBOY_COVER_RESOLUTION` env var (default `1264x1680`) selects the thumbnail JPEG dimensions from the fixed set `{1264x1680, 1072x1448, 600x800}`. Arbitrary widths/heights are not supported.
+
+**Implementation impact:** `cover-templates.ts` is removed; the templates move into `src/infrastructure/converter/flavors/classic/`. `domain/ports.ts` gains the `CoverFlavor`, `ThumbnailInput`, `ChapterInput`, `SatoriNode`, and `SatoriStyle` interfaces. A new `domain/values/cover-resolution.ts` defines the `COVER_RESOLUTIONS` map and `CoverResolutionName` type. Satori and one bundled font (Source Serif 4 regular) are added as dependencies; total Docker image growth ≈ 4 MB.
 
 ---
 

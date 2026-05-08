@@ -1,5 +1,5 @@
 /**
- * MarkdownEpubConverter — Implements FR-1, FR-25, FR-36, FR-37 (PB-008, PB-025)
+ * MarkdownEpubConverter — Implements FR-1, FR-25, FR-36, FR-37 (PB-008, PB-025, PB-026)
  *
  * Converts a MarkdownDocument to an EpubDocument by:
  *  1. Parsing Markdown to HTML via marked
@@ -15,10 +15,11 @@
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import { File } from "node:buffer";
-import type { ContentConverter } from "../../domain/ports.js";
+import type { ContentConverter, CoverFlavor } from "../../domain/ports.js";
 import type { Title, Author, MarkdownDocument } from "../../domain/values/index.js";
 import { EpubDocument } from "../../domain/values/index.js";
 import { ConversionError, type Result, ok, err } from "../../domain/errors.js";
+import type { CoverResolution } from "../../domain/values/cover-resolution.js";
 import type { ImageProcessor } from "./image-processor.js";
 import type { CoverGenerator } from "./cover-generator.js";
 import { optionsDefaults } from "epub-gen-memory";
@@ -53,14 +54,20 @@ const ALLOWED_TAGS = [
  * section — enabling Kindle's "Go To" navigation to list each section
  * independently.
  *
+ * The active CoverFlavor and CoverResolution are injected at construction time
+ * and applied to every article converted by this instance.
+ *
  * Implements FR-1 (PB-008): Markdown → EPUB conversion pipeline.
  * Implements FR-25 (PB-025): multi-section chapter splitting.
- * Implements FR-36, FR-37 (PB-008): cover HTML chapter and cover JPEG image.
+ * Implements FR-36, FR-37 (PB-008, PB-026): cover HTML chapter and cover JPEG image.
+ * Implements FR-38, FR-39 (PB-026): flavor and resolution threading.
  */
 export class MarkdownEpubConverter implements ContentConverter {
   constructor(
     private readonly imageProcessor: ImageProcessor,
     private readonly coverGenerator: CoverGenerator,
+    private readonly flavor: CoverFlavor,
+    private readonly resolution: CoverResolution,
   ) {}
 
   async toEpub(
@@ -102,12 +109,19 @@ export class MarkdownEpubConverter implements ContentConverter {
         await this.imageProcessor.process(safeHtml);
 
       // Generate cover assets — FR-36 (HTML chapter) and FR-37 (JPEG image)
-      const coverCss = this.coverGenerator.generateCoverCss();
-      const jpegBuffer = await this.coverGenerator.generateImage(
+      // The flavor and resolution were resolved once at startup and flow through here.
+      const coverCss = this.coverGenerator.generateCoverCss(this.flavor);
+      const thumbnailContent = this.coverGenerator.buildThumbnailContent(
         title.value,
         author.value,
       );
+      const jpegBuffer = await this.coverGenerator.generateImage(
+        this.flavor,
+        this.resolution,
+        thumbnailContent,
+      );
       const htmlChapter = this.coverGenerator.generateHtmlChapter(
+        this.flavor,
         title.value,
         author.value,
         document.metadata.url,

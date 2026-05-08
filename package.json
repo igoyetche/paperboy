@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "postbuild": "node -e \"const{cpSync}=require('fs');cpSync('src/infrastructure/converter/assets','dist/infrastructure/converter/assets',{recursive:true})\"",
+    "postbuild": "node -e \"const{cpSync}=require('fs');cpSync('src/infrastructure/converter/assets','dist/infrastructure/converter/assets',{recursive:true})\" && node scripts/verify-assets.mjs",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "cli": "tsx src/cli-entry.ts",
@@ -39,6 +39,7 @@
     "nodemailer": "^8.0.4",
     "pino": "^9.6.0",
     "sanitize-html": "^2.14.0",
+    "satori": "^0.26.0",
     "sharp": "^0.34.5",
     "yaml": "^2.8.3",
     "zod": "^3.24.2"

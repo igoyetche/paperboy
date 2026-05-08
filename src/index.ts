@@ -11,15 +11,20 @@ import { SmtpMailer } from "./infrastructure/mailer/smtp-mailer.js";
 import { SendToKindleService } from "./domain/send-to-kindle-service.js";
 import { ToolHandler } from "./application/tool-handler.js";
 import { GrayMatterFrontmatterParser } from "./infrastructure/frontmatter/gray-matter-parser.js";
+import { getFlavor } from "./infrastructure/converter/flavors/index.js";
 
 const config = loadConfig();
 const pinoLogger = createPinoLogger(config.logLevel);
 const deliveryLogger = createDeliveryLogger(pinoLogger);
 const imageProcessorLogger = createImageProcessorLogger(pinoLogger);
 
+// FR-38, FR-39 (PB-026): resolve flavor and resolution from config — validated at startup
+const flavor = getFlavor(config.defaultCoverFlavor);
+const resolution = config.coverResolution;
+
 const imageProcessor = new ImageProcessor(config.image, imageProcessorLogger);
 const coverGenerator = new CoverGenerator();
-const converter = new MarkdownEpubConverter(imageProcessor, coverGenerator);
+const converter = new MarkdownEpubConverter(imageProcessor, coverGenerator, flavor, resolution);
 const mailer = new SmtpMailer({
   sender: config.sender,
   smtp: config.smtp,

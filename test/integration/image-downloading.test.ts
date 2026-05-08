@@ -8,6 +8,8 @@ import { Author } from "../../src/domain/values/author.js";
 import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
 import { MarkdownDocument } from "../../src/domain/values/markdown-document.js";
 import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
+import { getFlavor } from "../../src/infrastructure/converter/flavors/index.js";
+import { getCoverResolution } from "../../src/domain/values/cover-resolution.js";
 
 function makeTitle(v: string) {
   const r = Title.create(v);
@@ -39,7 +41,17 @@ const fakeCoverGenerator: CoverGenerator = {
   generateImage: vi.fn(async () => Buffer.from([0xff, 0xd8, 0xff])),
   generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
   generateCoverCss: vi.fn(() => ".cover { color: red; }"),
-};
+  // eslint-disable-next-line @typescript-eslint/require-await
+  generateCoverSvg: vi.fn(async () => "<svg/>"),
+  buildThumbnailContent: vi.fn(() => ({
+    titleLines: ["Test"],
+    author: "Claude",
+    iconDataUri: undefined,
+  })),
+} as unknown as CoverGenerator;
+
+const classicFlavor = getFlavor("classic");
+const defaultResolution = getCoverResolution("1264x1680");
 
 describe.skip("Image downloading integration", () => {
   // These tests require network access and real image downloads.
@@ -58,7 +70,7 @@ describe.skip("Image downloading integration", () => {
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator, classicFlavor, defaultResolution);
 
     // Simple markdown with a real, small image
     const markdown = `
@@ -101,7 +113,7 @@ The image should be embedded in the EPUB.
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator, classicFlavor, defaultResolution);
 
     const markdown = `
 # Document with Multiple Images
@@ -146,7 +158,7 @@ More text.
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator, classicFlavor, defaultResolution);
 
     const markdown = `
 # Document with Broken Image
@@ -195,7 +207,7 @@ describe("Image downloading (text-only fallback)", () => {
     const logger = createPinoLogger("silent");
     const imageProcessorLogger = createImageProcessorLogger(logger);
     const imageProcessor = new ImageProcessor(config, imageProcessorLogger);
-    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator);
+    const converter = new MarkdownEpubConverter(imageProcessor, fakeCoverGenerator, classicFlavor, defaultResolution);
 
     const markdown = `
 # Text-Only Document

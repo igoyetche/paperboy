@@ -1,7 +1,7 @@
 # Project Status Dashboard
 
 > Last updated: 2026-05-07
-> Last ticket code: PB-025
+> Last ticket code: PB-026
 
 ## Active Work
 
@@ -25,7 +25,8 @@
 
 | Code | Feature | Specs Affected | Completed | Plan Archive |
 |------|---------|---|---|---|
-| PB-025 | EPUB Navigation Support | specs/main-spec.md | 2026-05-06 | plans/done/PB-025-2026-05-06-epub-navigation-support.md |
+| PB-026 | Redesigned Thumbnail Rendering | specs/main-spec.md | 2026-05-07 | plans/done/PB-026-2026-05-07-redesigned-thumbnail-rendering.md |
+| PB-025 | EPUB Navigation Support | specs/main-spec.md | 2026-05-07 | plans/done/PB-025-2026-05-06-epub-navigation-support.md |
 | PB-022 | Fix: Missing asset copy in build | — | 2026-04-22 | — |
 | PB-021 | Fix: SonarQube ReDoS vulnerability in EPUB validator | — | 2026-04-22 | — |
 | PB-014 | SonarQube CI Workflow | CLAUDE.md | 2026-04-15 | plans/done/PB-014-2026-04-15-sonarqube-ci.md |

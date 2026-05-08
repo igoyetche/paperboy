@@ -11,6 +11,8 @@ import { MarkdownContent } from "../../src/domain/values/markdown-content.js";
 import { MarkdownDocument } from "../../src/domain/values/markdown-document.js";
 import { DocumentMetadata } from "../../src/domain/values/document-metadata.js";
 import type { ImageStats } from "../../src/domain/values/image-stats.js";
+import { getFlavor } from "../../src/infrastructure/converter/flavors/index.js";
+import { getCoverResolution } from "../../src/domain/values/cover-resolution.js";
 
 /**
  * Diagnostic logger that captures all events for analysis
@@ -52,7 +54,17 @@ const fakeCoverGenerator: CoverGenerator = {
   generateImage: vi.fn(async () => Buffer.from([0xff, 0xd8, 0xff])),
   generateHtmlChapter: vi.fn(() => "<div>cover</div>"),
   generateCoverCss: vi.fn(() => ".cover { color: red; }"),
-};
+  // eslint-disable-next-line @typescript-eslint/require-await
+  generateCoverSvg: vi.fn(async () => "<svg/>"),
+  buildThumbnailContent: vi.fn(() => ({
+    titleLines: ["Test"],
+    author: "Claude",
+    iconDataUri: undefined,
+  })),
+} as unknown as CoverGenerator;
+
+const classicFlavor = getFlavor("classic");
+const defaultResolution = getCoverResolution("1264x1680");
 
 function printFailureAnalysis(failures: Array<{ url: string; reason: string }>): void {
   if (failures.length === 0) return;
@@ -308,7 +320,7 @@ describe("Image downloading with real sample file", () => {
         diagnosticLogger,
       );
 
-      const converter = new MarkdownEpubConverter(processor, fakeCoverGenerator);
+      const converter = new MarkdownEpubConverter(processor, fakeCoverGenerator, classicFlavor, defaultResolution);
 
       // Generate EPUB
       const document = MarkdownDocument.fromParts(contentResult.value, DocumentMetadata.empty());
