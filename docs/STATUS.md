@@ -1,15 +1,18 @@
 # Project Status Dashboard
 
-> Last updated: 2026-05-08
-> Last ticket code: PB-026
+> Last updated: 2026-05-11
+> Last ticket code: PB-027
 
 ## Active Work
 
-_No active work._
+| Code | Feature | Phase | Plan |
+|------|---------|-------|------|
+| PB-027 | Brutalist Cover Flavor | 🔄 In Progress | plans/active/PB-027-brutalist-cover-flavor.md |
 
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
+| PB-027 | Brutalist Cover Flavor | 🔄 In Progress | specs/main-spec.md | plans/active/PB-027-brutalist-cover-flavor.md | Medium |
 | PB-020 | curl --impersonate Cloudflare Bypass | Feature | specs/PB-016-image-downloading-spec.md | — | Medium |
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
