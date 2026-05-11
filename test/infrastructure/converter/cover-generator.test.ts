@@ -190,6 +190,20 @@ ${chapter}
   }
 });
 
+describe("CoverGenerator.buildThumbnailContent", () => {
+  const generator = new CoverGenerator();
+
+  it("includes sourceDomain in the returned ThumbnailContent when provided", () => {
+    const content = generator.buildThumbnailContent("My Title", "Author", "theverge.com");
+    expect(content.sourceDomain).toBe("theverge.com");
+  });
+
+  it("sets sourceDomain to undefined when not provided", () => {
+    const content = generator.buildThumbnailContent("My Title", "Author");
+    expect(content.sourceDomain).toBeUndefined();
+  });
+});
+
 describe("CoverGenerator.generateImage", () => {
   const generator = new CoverGenerator();
 

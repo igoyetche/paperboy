@@ -110,10 +110,22 @@ export class MarkdownEpubConverter implements ContentConverter {
 
       // Generate cover assets — FR-36 (HTML chapter) and FR-37 (JPEG image)
       // The flavor and resolution were resolved once at startup and flow through here.
+      // Extract sourceDomain once so both the thumbnail and the HTML chapter use
+      // the same value without repeating the URL parsing.
+      let sourceDomain: string | undefined;
+      if (document.metadata.url) {
+        try {
+          sourceDomain = new URL(document.metadata.url).hostname;
+        } catch {
+          sourceDomain = undefined;
+        }
+      }
       const coverCss = this.coverGenerator.generateCoverCss(this.flavor);
       const thumbnailContent = this.coverGenerator.buildThumbnailContent(
         title.value,
         author.value,
+        sourceDomain,
+        this.flavor,
       );
       const jpegBuffer = await this.coverGenerator.generateImage(
         this.flavor,

@@ -64,10 +64,11 @@ describe("MarkdownEpubConverter", () => {
     generateCoverCss: vi.fn(() => ".cover { color: red; }"),
     // eslint-disable-next-line @typescript-eslint/require-await
     generateCoverSvg: vi.fn(async () => "<svg/>"),
-    buildThumbnailContent: vi.fn((_title: string, author: string) => ({
+    buildThumbnailContent: vi.fn((_title: string, author: string, _sourceDomain?: string, _flavor?: unknown) => ({
       titleLines: ["Test"],
       author,
       iconDataUri: undefined,
+      sourceDomain: _sourceDomain,
     })),
   } as unknown as CoverGenerator;
 
@@ -191,6 +192,21 @@ describe("MarkdownEpubConverter", () => {
       "Source Test",
       "Claude",
       "https://theverge.com/article/123",
+    );
+  });
+
+  it("passes sourceDomain extracted from metadata URL to buildThumbnailContent", async () => {
+    vi.clearAllMocks();
+    await converter.toEpub(
+      makeTitle("Domain Test"),
+      makeDocument("# Hello", "https://example.com/article"),
+      makeAuthor("Claude"),
+    );
+    expect(fakeCoverGenerator.buildThumbnailContent).toHaveBeenCalledWith(
+      expect.any(String),   // title
+      expect.any(String),   // author
+      "example.com",        // sourceDomain extracted from "https://example.com/article"
+      expect.anything(),    // flavor
     );
   });
 

@@ -209,12 +209,20 @@ export class CoverGenerator {
   }
 
   /**
-   * Convenience: build the ThumbnailContent from title and author for callers
-   * that don't compose the object themselves. Wraps the title and attaches the
+   * Convenience: build the ThumbnailContent from title, author, and optional
+   * source domain for callers that don't compose the object themselves.
+   * Wraps the title using the flavor's titleWrap settings (or the defaults
+   * maxChars=13, maxLines=4 when no flavor is provided) and attaches the
    * bundled icon data URI.
    */
-  buildThumbnailContent(title: string, author: string): ThumbnailContent {
-    const titleLines = wrapTitle(title, 13, 4);
-    return { titleLines, author, iconDataUri: this.iconDataUri };
+  buildThumbnailContent(
+    title: string,
+    author: string,
+    sourceDomain?: string,
+    flavor?: CoverFlavor,
+  ): ThumbnailContent {
+    const { maxChars, maxLines } = flavor?.titleWrap ?? { maxChars: 13, maxLines: 4 };
+    const titleLines = wrapTitle(title, maxChars, maxLines);
+    return { titleLines, author, iconDataUri: this.iconDataUri, sourceDomain };
   }
 }
