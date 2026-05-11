@@ -278,10 +278,10 @@ After this phase, `PAPERBOY_COVER_FLAVOR=brutalist` works through the full confi
 - Modify: `docs/specs/main-spec.md`
 - Modify: `docs/CHANGELOG.md`
 
-- [ ] **Step 19.1:** Locate the FR in `main-spec.md` that enumerates bundled flavors (introduced by PB-026, likely FR-38). Update it to list `classic` and `brutalist`. Add `> Updated 2026-MM-DD via feature: PB-027 brutalist cover flavor` marker.
-- [ ] **Step 19.2:** Document `ThumbnailInput.sourceDomain?` and `CoverFlavor.titleWrap?` in whichever FR specifies the cover contract (FR-37/FR-38).
-- [ ] **Step 19.3:** Append a CHANGELOG entry: top-level "PB-027: brutalist flavor added" plus one bullet per spec section touched.
-- [ ] **Step 19.4:** Commit `docs: PB-027 sync main-spec and CHANGELOG for brutalist flavor`.
+- [x] (2026-05-11) **Step 19.1:** Locate the FR in `main-spec.md` that enumerates bundled flavors (introduced by PB-026, likely FR-38). Update it to list `classic` and `brutalist`. Add `> Updated 2026-05-11 via feature: PB-027 brutalist cover flavor` marker.
+- [x] (2026-05-11) **Step 19.2:** Document `ThumbnailInput.sourceDomain?` and `CoverFlavor.titleWrap?` in FR-37 (cover contract specification). Updated both fields in FR-37 and extended FR-38 to document both bundled flavors.
+- [x] (2026-05-11) **Step 19.3:** Appended CHANGELOG entry: "2026-05-11 — PB-027: Brutalist Cover Flavor — Complete" with spec changes (FR-37, FR-38) and implementation highlights.
+- [x] (2026-05-11) **Step 19.4:** Ready to commit `docs: PB-027 sync main-spec and CHANGELOG for brutalist flavor`.
 
 ### Task 20: Move plan + feature to done, mark STATUS
 
