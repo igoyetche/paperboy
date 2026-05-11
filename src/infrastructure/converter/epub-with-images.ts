@@ -104,23 +104,6 @@ export function createEpubWithPredownloadedImages(
   // Override downloadAllImages to match pre-downloaded images to detected URLs
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   (epub).downloadAllImages = function (): void {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (!this.images?.length) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      this.log?.("No images to embed");
-      return;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    this.log?.("Embedding pre-downloaded images (skipping network download)");
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const bufferMap = (this).__imageBufferMap as EpubBufferMap | undefined;
-    if (bufferMap) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      fillImageBuffers(this.images, bufferMap, (msg) => { this.log?.(msg); });
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const oebps = this.zip?.folder("OEBPS");
     if (!oebps) {
@@ -129,25 +112,38 @@ export function createEpubWithPredownloadedImages(
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-    const imagesFolder = oebps.folder("images");
-    if (!imagesFolder) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (this.images?.length) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      this.warn?.("Could not create OEBPS/images folder");
-      return;
+      this.log?.("Embedding pre-downloaded images (skipping network download)");
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const bufferMap = (this).__imageBufferMap as EpubBufferMap | undefined;
+      if (bufferMap) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        fillImageBuffers(this.images, bufferMap, (msg) => { this.log?.(msg); });
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+      const imagesFolder = oebps.folder("images");
+      if (imagesFolder) {
+        writeImageFiles(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+          this.images,
+          imagesFolder,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (msg) => { this.log?.(msg); },
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (msg) => { this.warn?.(msg); },
+        );
+      }
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      this.log?.("No images to embed");
     }
 
-    writeImageFiles(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      this.images,
-      imagesFolder,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (msg) => { this.log?.(msg); },
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (msg) => { this.warn?.(msg); },
-    );
-
-    // Write any extra OEBPS files (e.g. fonts) requested by the active flavor
+    // Write any extra OEBPS files (e.g. fonts) requested by the active flavor.
+    // This runs regardless of whether there are images to embed.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const extraFiles = (this).__extraOebpsFiles as ExtraOebpsFile[] | undefined;
     if (extraFiles) {
