@@ -171,8 +171,8 @@ ${chapter}
         writeFileSync(htmlFixturePath, generated, "utf-8");
       }
 
-      const fixture = readFileSync(htmlFixturePath, "utf-8");
-      expect(generated).toBe(fixture);
+      const fixture = readFileSync(htmlFixturePath, "utf-8").replace(/\r\n/g, "\n");
+      expect(generated.replace(/\r\n/g, "\n")).toBe(fixture);
     });
 
     it(`[${flavorName}] matches sample-thumbnail.svg fixture (Kindle library thumbnail)`, async () => {
@@ -184,8 +184,8 @@ ${chapter}
         writeFileSync(svgFixturePath, generated, "utf-8");
       }
 
-      const fixture = readFileSync(svgFixturePath, "utf-8");
-      expect(generated).toBe(fixture);
+      const fixture = readFileSync(svgFixturePath, "utf-8").replace(/\r\n/g, "\n");
+      expect(generated.replace(/\r\n/g, "\n")).toBe(fixture);
     });
   }
 });

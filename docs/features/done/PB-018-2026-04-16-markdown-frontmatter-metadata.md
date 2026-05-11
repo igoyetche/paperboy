@@ -1,6 +1,7 @@
 # PB-018: Markdown Frontmatter Metadata
 
-**Status:** Active — Validation
+**Status:** Complete
+**Completed:** 2026-04-16
 **Date:** 2026-04-10
 **Design Started:** 2026-04-10
 **Branch:** `pb-018-markdown-frontmatter-metadata`
@@ -25,17 +26,17 @@ Using the metadata from the file itself removes the friction and lets the Kindle
 
 ## Acceptance Criteria
 
-- [ ] Markdown files with metadata (`title`, `url`, `date`) are parsed and the metadata is made available to the conversion pipeline
-- [ ] CLI `--title` is optional. When omitted with a `--file` input, title resolves in this order: **(1) explicit arg → (2) metadata `title` → (3) filename stem**
-- [ ] CLI `--title` is optional. When omitted with **stdin** input, title resolves in this order: **(1) explicit arg → (2) metadata `title` → (3) hard error** (no filename to fall back to)
-- [ ] MCP tool `title` parameter is optional. Title resolves in this order: **(1) explicit parameter → (2) metadata `title` → (3) hard error** (MCP has no filename to fall back to)
-- [ ] An explicit title always overrides the metadata title, even if metadata is present
-- [ ] Markdown files without metadata continue to work unchanged — existing behavior is preserved
-- [ ] Metadata block is stripped from the rendered EPUB content (the reader should not see the raw metadata block)
-- [ ] Watcher-folder runs automatically pick up metadata titles without any CLI changes from the user
-- [ ] When no title is resolvable anywhere, a clear validation error surfaces (CLI exit code, MCP error response)
-- [ ] No regression in existing tests; new tests cover metadata parsing and each branch of title resolution
-- [ ] TypeScript compiles with zero errors in strict mode
+- [x] Markdown files with metadata (`title`, `url`, `date`) are parsed and the metadata is made available to the conversion pipeline
+- [x] CLI `--title` is optional. When omitted with a `--file` input, title resolves in this order: **(1) explicit arg → (2) metadata `title` → (3) filename stem**
+- [x] CLI `--title` is optional. When omitted with **stdin** input, title resolves in this order: **(1) explicit arg → (2) metadata `title` → (3) hard error** (no filename to fall back to)
+- [x] MCP tool `title` parameter is optional. Title resolves in this order: **(1) explicit parameter → (2) metadata `title` → (3) hard error** (MCP has no filename to fall back to)
+- [x] An explicit title always overrides the metadata title, even if metadata is present
+- [x] Markdown files without metadata continue to work unchanged — existing behavior is preserved
+- [x] Metadata block is stripped from the rendered EPUB content (the reader should not see the raw metadata block)
+- [x] Watcher-folder runs automatically pick up metadata titles without any CLI changes from the user
+- [x] When no title is resolvable anywhere, a clear validation error surfaces (CLI exit code, MCP error response)
+- [x] No regression in existing tests; new tests cover metadata parsing and each branch of title resolution
+- [x] TypeScript compiles with zero errors in strict mode
 
 ## Out of Scope
 

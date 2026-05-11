@@ -4,6 +4,24 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-04-24 — PB-023: Fix SonarQube Open Issues — Complete
+
+Resolved 8 open SonarQube code-smell issues across the codebase. Fixes included: reducing cognitive complexity in `ImageProcessor`, `image-downloading-real-sample` test, and `validate-epub.mjs`; consolidating duplicate imports in `dotenv-loader` and `title-resolver`; replacing promise chains with top-level await in `cli-entry`; removing unused variables in watcher tests; applying optional-chaining and `replaceAll` simplifications across multiple files. The final 2 remaining issues (HTML file in `docs/` and a TODO comment) were resolved in a follow-up commit.
+
+---
+
+## 2026-04-22 — PB-008: EPUB Cover Generation — Complete
+
+Every EPUB produced by Paperboy now includes an auto-generated cover: a 600×900 JPEG thumbnail (visible in the Kindle library) and a styled HTML cover chapter as the first page. The cover displays the paperboy icon, document title, and author. The icon is embedded via CSS `background-image` (not `<img>`) to avoid epub-gen-memory treating the data URI as a downloadable image. A defensive guard in `epub-with-images.ts` skips any `data:` URI entries in the image matching loop. All three composition roots wire `CoverGenerator` into `MarkdownEpubConverter`.
+
+---
+
+## 2026-04-16 — PB-018: Markdown Frontmatter Metadata — Complete
+
+Paperboy now reads YAML frontmatter from Markdown files and uses the embedded `title`, `url`, and `date` metadata. The `--title` CLI flag and `title` MCP parameter are now optional — title resolves from: (1) explicit arg/param → (2) frontmatter `title` → (3) filename stem (CLI file only). Frontmatter is stripped before rendering so it never appears in the EPUB. The watcher automatically picks up frontmatter titles. Malformed frontmatter surfaces a hard error. EPUB attachment filenames use the `Title - Author - Date` format when metadata is present.
+
+---
+
 ## 2026-05-07 — PB-026: Redesigned Thumbnail Rendering — Complete
 
 ### Feature Completed

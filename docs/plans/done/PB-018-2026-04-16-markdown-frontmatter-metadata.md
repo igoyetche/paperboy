@@ -143,9 +143,9 @@ Parse YAML frontmatter from Markdown files, make `title` optional across all ent
 
 - [x] **T-33**: Run full test suite — `npm test` must pass with zero failures and zero TypeScript errors (`npm run build`).
   **Result: 271 tests passing, 3 skipped. TypeScript: zero errors.** (2026-04-16)
-- [~] **T-34**: Manual smoke test — run `paperboy --file <paperclip-file.md>` with a real Paperclip-exported file (with frontmatter). Verify: title is extracted from metadata, frontmatter does not appear in rendered EPUB, delivery succeeds.
-- [~] **T-35**: Manual regression test — run `paperboy --title "Test" --file <no-frontmatter.md>`. Verify unchanged behavior.
-- [~] **T-36**: Manual watcher test — drop a Paperclip file into the watch folder. Verify metadata title appears in Kindle library.
+- [x] **T-34**: Manual smoke test — run `paperboy --file <paperclip-file.md>` with a real Paperclip-exported file (with frontmatter). Verify: title is extracted from metadata, frontmatter does not appear in rendered EPUB, delivery succeeds. (2026-04-16)
+- [x] **T-35**: Manual regression test — run `paperboy --title "Test" --file <no-frontmatter.md>`. Verify unchanged behavior. (2026-04-16)
+- [x] **T-36**: Manual watcher test — drop a Paperclip file into the watch folder. Verify metadata title appears in Kindle library. (2026-04-16)
 
 ---
 
