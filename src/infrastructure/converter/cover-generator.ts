@@ -109,6 +109,7 @@ export function wrapTitle(
 export class CoverGenerator {
   private readonly iconDataUri: string;
   private readonly fonts: SatoriFont[];
+  private readonly interBoldBuffer: Buffer;
 
   constructor() {
     const dir = dirname(fileURLToPath(import.meta.url));
@@ -129,6 +130,27 @@ export class CoverGenerator {
         style: "normal" as const,
       },
     ];
+
+    // Load Inter Bold for brutalist flavor Satori rendering
+    const interBoldPath = join(dir, "flavors", "brutalist", "assets", "fonts", "inter-bold.ttf");
+    this.interBoldBuffer = readFileSync(interBoldPath);
+    this.fonts.push({
+      name: "Inter",
+      data: this.interBoldBuffer,
+      weight: 700 as const,
+      style: "normal" as const,
+    });
+  }
+
+  /**
+   * Returns extra OEBPS files to embed in the EPUB for the given flavor.
+   * Currently only the brutalist flavor requires a font file.
+   */
+  getExtraEpubFiles(flavorName: string): Array<{ path: string; buffer: Buffer }> {
+    if (flavorName === "brutalist") {
+      return [{ path: "fonts/inter-bold.ttf", buffer: this.interBoldBuffer }];
+    }
+    return [];
   }
 
   /**

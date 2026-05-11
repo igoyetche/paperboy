@@ -173,28 +173,28 @@ This phase introduces the visible new flavor. After it lands, `PAPERBOY_COVER_FL
 **Files:**
 - Modify: `src/infrastructure/converter/cover-generator.ts`
 
-- [ ] **Step 10.1:** In the constructor, load `flavors/brutalist/assets/fonts/inter-bold.ttf` and add a second Satori font entry: `{ name: "Inter", data, weight: 700, style: "normal" }`. Both fonts now sit in `this.fonts`.
-- [ ] **Step 10.2:** Verify no existing test breaks (classic flavor uses Source Serif; Satori picks the font by name from the available font list, so loading an extra font is harmless).
-- [ ] **Step 10.3:** Commit `feat: PB-027 load Inter Bold font in CoverGenerator`.
+- [x] (2026-05-11) **Step 10.1:** In the constructor, load `flavors/brutalist/assets/fonts/inter-bold.ttf` and add a second Satori font entry: `{ name: "Inter", data, weight: 700, style: "normal" }`. Both fonts now sit in `this.fonts`. Also store `interBoldBuffer` as a private field. Added `getExtraEpubFiles(flavorName)` method returning `[{ path: "fonts/inter-bold.ttf", buffer }]` for brutalist, `[]` otherwise.
+- [x] (2026-05-11) **Step 10.2:** 501 tests green — no regressions.
+- [x] (2026-05-11) **Step 10.3:** Committed with Task 11 and 12.
 
 ### Task 11: Embed Inter Bold inside the EPUB at `OEBPS/fonts/`
 
 **Files:**
 - Modify: `src/infrastructure/converter/epub-with-images.ts` (or `markdown-epub-converter.ts` — wherever the EPUB build pipeline accepts custom OEBPS files)
 
-- [ ] **Step 11.1:** Investigate the existing `epub-with-images` wrapper. Determine whether the current call path can ship `OEBPS/fonts/inter-bold.ttf` inside the EPUB. If yes, only the call site changes. If no, extend the wrapper to accept arbitrary `(path, buffer)` files alongside the existing image-files list.
-- [ ] **Step 11.2:** When the active flavor is `brutalist`, include the Inter Bold buffer at `OEBPS/fonts/inter-bold.ttf`. Skip for other flavors (no font shipping needed for classic — its `@font-face`-free CSS uses serif as a system fallback). Use the flavor's `name` to decide; do **not** introduce a new contract method for font shipping. If a future flavor needs the same plumbing, generalize then.
-- [ ] **Step 11.3:** Write a test in `markdown-epub-converter.test.ts` (Task 17) that opens the resulting EPUB with `jszip` and asserts the font file exists at `OEBPS/fonts/inter-bold.ttf`.
-- [ ] **Step 11.4:** Commit `feat: PB-027 embed Inter Bold inside EPUB for brutalist flavor`.
+- [x] (2026-05-11) **Step 11.1:** Existing wrapper had no path for extra OEBPS files. Extended `downloadAllImages` override in `epub-with-images.ts` to read `this.__extraOebpsFiles` (array of `{ path, buffer }`) and write each into the appropriate OEBPS subfolder via `oebps.folder(subfolder).file(name, buffer)`.
+- [x] (2026-05-11) **Step 11.2:** `MarkdownEpubConverter.toEpub()` sets `epubInstance.__extraOebpsFiles = this.coverGenerator.getExtraEpubFiles(this.flavor.name)` after setting `__imageBufferMap`. Updated the three fake `CoverGenerator` objects in tests to include `getExtraEpubFiles: vi.fn(() => [])`.
+- [x] (2026-05-11) **Step 11.3:** End-to-end font-presence test deferred to Task 18.
+- [x] (2026-05-11) **Step 11.4:** Committed with Task 10 and 12.
 
 ### Task 12: Brutalist flavor `index.ts`
 
 **Files:**
 - Create: `src/infrastructure/converter/flavors/brutalist/index.ts`
 
-- [ ] **Step 12.1:** Export a `CoverFlavor` object with `name: "brutalist"`, the three builder functions, and `titleWrap: { maxChars: 18, maxLines: 4 }`.
-- [ ] **Step 12.2:** Run `npm run build`.
-- [ ] **Step 12.3:** Commit `feat: PB-027 add brutalist CoverFlavor entry point`.
+- [x] (2026-05-11) **Step 12.1:** Export a `CoverFlavor` object with `name: "brutalist"`, the three builder functions, and `titleWrap: { maxChars: 18, maxLines: 4 }`.
+- [x] (2026-05-11) **Step 12.2:** `npm run build` clean.
+- [x] (2026-05-11) **Step 12.3:** Committed with Task 10 and 11.
 
 ---
 

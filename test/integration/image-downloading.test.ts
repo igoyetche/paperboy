@@ -48,6 +48,7 @@ const fakeCoverGenerator: CoverGenerator = {
     author: "Claude",
     iconDataUri: undefined,
   })),
+  getExtraEpubFiles: vi.fn(() => []),
 } as unknown as CoverGenerator;
 
 const classicFlavor = getFlavor("classic");

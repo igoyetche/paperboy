@@ -196,6 +196,10 @@ export class MarkdownEpubConverter implements ContentConverter {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
       (epubInstance as any).__imageBufferMap = imageBufferMap;
 
+      // Attach extra OEBPS files (e.g. fonts) needed by the active flavor
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      (epubInstance as any).__extraOebpsFiles = this.coverGenerator.getExtraEpubFiles(this.flavor.name);
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       const buffer = await (epubInstance as any).genEpub();
 

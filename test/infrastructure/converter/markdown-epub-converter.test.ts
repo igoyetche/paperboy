@@ -70,6 +70,7 @@ describe("MarkdownEpubConverter", () => {
       iconDataUri: undefined,
       sourceDomain: _sourceDomain,
     })),
+    getExtraEpubFiles: vi.fn(() => []),
   } as unknown as CoverGenerator;
 
   const converter = new MarkdownEpubConverter(
