@@ -96,6 +96,7 @@ Multiple devices: `KINDLE_DEVICES=personal:you@kindle.com,partner:them@kindle.co
 | Variable | Default | Description |
 |---|---|---|
 | `DEFAULT_AUTHOR` | `Claude` | Author name when none is specified |
+| `PAPERBOY_COVER_FLAVOR` | `classic` | Cover art style: `classic` or `brutalist` |
 | `WATCH_FOLDER` | — | Path to folder for the `paperboy watch` command (auto-sends files) |
 | `MCP_HTTP_PORT` | — | Enables HTTP/SSE transport on this port |
 | `MCP_AUTH_TOKEN` | — | Required when `MCP_HTTP_PORT` is set |

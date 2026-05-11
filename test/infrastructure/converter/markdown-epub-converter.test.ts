@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import JSZip from "jszip";
 import { MarkdownEpubConverter } from "../../../src/infrastructure/converter/markdown-epub-converter.js";
 import type { ImageProcessor } from "../../../src/infrastructure/converter/image-processor.js";
-import type { CoverGenerator } from "../../../src/infrastructure/converter/cover-generator.js";
+import { CoverGenerator } from "../../../src/infrastructure/converter/cover-generator.js";
 import { Title } from "../../../src/domain/values/title.js";
 import { Author } from "../../../src/domain/values/author.js";
 import { MarkdownContent } from "../../../src/domain/values/markdown-content.js";
@@ -64,11 +64,13 @@ describe("MarkdownEpubConverter", () => {
     generateCoverCss: vi.fn(() => ".cover { color: red; }"),
     // eslint-disable-next-line @typescript-eslint/require-await
     generateCoverSvg: vi.fn(async () => "<svg/>"),
-    buildThumbnailContent: vi.fn((_title: string, author: string) => ({
+    buildThumbnailContent: vi.fn((_title: string, author: string, _sourceDomain?: string, _flavor?: unknown) => ({
       titleLines: ["Test"],
       author,
       iconDataUri: undefined,
+      sourceDomain: _sourceDomain,
     })),
+    getExtraEpubFiles: vi.fn(() => []),
   } as unknown as CoverGenerator;
 
   const converter = new MarkdownEpubConverter(
@@ -191,6 +193,21 @@ describe("MarkdownEpubConverter", () => {
       "Source Test",
       "Claude",
       "https://theverge.com/article/123",
+    );
+  });
+
+  it("passes sourceDomain extracted from metadata URL to buildThumbnailContent", async () => {
+    vi.clearAllMocks();
+    await converter.toEpub(
+      makeTitle("Domain Test"),
+      makeDocument("# Hello", "https://example.com/article"),
+      makeAuthor("Claude"),
+    );
+    expect(fakeCoverGenerator.buildThumbnailContent).toHaveBeenCalledWith(
+      expect.any(String),   // title
+      expect.any(String),   // author
+      "example.com",        // sourceDomain extracted from "https://example.com/article"
+      expect.anything(),    // flavor
     );
   });
 
@@ -558,4 +575,76 @@ describe("MarkdownEpubConverter", () => {
 
     expect(foundAnchorId).toBe(true);
   });
+});
+
+describe("MarkdownEpubConverter with brutalist flavor — end-to-end EPUB structure", () => {
+  it(
+    "embeds inter-bold.ttf in OEBPS/fonts/ and includes @font-face in style.css",
+    async () => {
+      const realCoverGenerator = new CoverGenerator();
+      const brutalistFlavor = getFlavor("brutalist");
+      const resolution = getCoverResolution("1264x1680");
+
+      const passthruImageProcessor: ImageProcessor = {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        process: vi.fn(async (html: string) => ({
+          html,
+          images: [],
+          stats: { total: 0, downloaded: 0, failed: 0, skipped: 0 },
+        })),
+      };
+
+      const converter = new MarkdownEpubConverter(
+        passthruImageProcessor,
+        realCoverGenerator,
+        brutalistFlavor,
+        resolution,
+      );
+
+      const title = makeTitle("Brutalist Test Article");
+      const author = makeAuthor("Claude");
+      const document = makeDocument("# Brutalist Test\n\nHello world.", "https://theverge.com/article");
+
+      const result = await converter.toEpub(title, document, author);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.error.message);
+
+      const zip = new JSZip();
+      const loadedZip = await zip.loadAsync(result.value.buffer);
+
+      const coverFile = loadedZip.file("OEBPS/cover.jpeg");
+      expect(coverFile).not.toBeNull();
+      if (coverFile) {
+        const coverBytes = await coverFile.async("uint8array");
+        expect(coverBytes.length).toBeGreaterThan(0);
+      }
+
+      const fontFile = loadedZip.file("OEBPS/fonts/inter-bold.ttf");
+      expect(fontFile).not.toBeNull();
+      if (fontFile) {
+        const fontBytes = await fontFile.async("uint8array");
+        expect(fontBytes.length).toBeGreaterThan(0);
+      }
+
+      const styleFile = loadedZip.file("OEBPS/style.css");
+      if (styleFile) {
+        const css = await styleFile.async("string");
+        expect(css).toContain("@font-face");
+        expect(css).toContain("inter-bold.ttf");
+      }
+
+      const chapterPaths = Object.keys(loadedZip.files).filter(
+        (p) => /OEBPS\/.*\.xhtml$/.test(p) && !p.includes("cover"),
+      );
+      if (chapterPaths.length > 0) {
+        const chapterFile = loadedZip.file(chapterPaths[0] ?? "");
+        if (chapterFile) {
+          const html = await chapterFile.async("string");
+          expect(html).toContain('class="brut-bar"');
+          expect(html).toContain("background:");
+        }
+      }
+    },
+    30_000,
+  );
 });

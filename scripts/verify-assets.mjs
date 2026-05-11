@@ -28,6 +28,14 @@ const requiredAssets = [
     path: join(distAssets, "fonts", "source-serif-regular.ttf"),
     description: "Source Serif 4 font TTF (dist/infrastructure/converter/assets/fonts/source-serif-regular.ttf)",
   },
+  {
+    path: join(projectRoot, "dist", "infrastructure", "converter", "flavors", "brutalist", "assets", "main-icon-inverted.png"),
+    description: "brutalist icon PNG (dist/infrastructure/converter/flavors/brutalist/assets/main-icon-inverted.png)",
+  },
+  {
+    path: join(projectRoot, "dist", "infrastructure", "converter", "flavors", "brutalist", "assets", "fonts", "inter-bold.ttf"),
+    description: "Inter Bold font TTF (dist/infrastructure/converter/flavors/brutalist/assets/fonts/inter-bold.ttf)",
+  },
 ];
 
 let allPresent = true;

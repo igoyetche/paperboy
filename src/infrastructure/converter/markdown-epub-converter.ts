@@ -110,10 +110,22 @@ export class MarkdownEpubConverter implements ContentConverter {
 
       // Generate cover assets — FR-36 (HTML chapter) and FR-37 (JPEG image)
       // The flavor and resolution were resolved once at startup and flow through here.
+      // Extract sourceDomain once so both the thumbnail and the HTML chapter use
+      // the same value without repeating the URL parsing.
+      let sourceDomain: string | undefined;
+      if (document.metadata.url) {
+        try {
+          sourceDomain = new URL(document.metadata.url).hostname;
+        } catch {
+          sourceDomain = undefined;
+        }
+      }
       const coverCss = this.coverGenerator.generateCoverCss(this.flavor);
       const thumbnailContent = this.coverGenerator.buildThumbnailContent(
         title.value,
         author.value,
+        sourceDomain,
+        this.flavor,
       );
       const jpegBuffer = await this.coverGenerator.generateImage(
         this.flavor,
@@ -183,6 +195,10 @@ export class MarkdownEpubConverter implements ContentConverter {
       // Attach image map so the overridden downloadAllImages() can use it
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
       (epubInstance as any).__imageBufferMap = imageBufferMap;
+
+      // Attach extra OEBPS files (e.g. fonts) needed by the active flavor
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      (epubInstance as any).__extraOebpsFiles = this.coverGenerator.getExtraEpubFiles(this.flavor.name);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       const buffer = await (epubInstance as any).genEpub();

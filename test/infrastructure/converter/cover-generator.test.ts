@@ -190,6 +190,20 @@ ${chapter}
   }
 });
 
+describe("CoverGenerator.buildThumbnailContent", () => {
+  const generator = new CoverGenerator();
+
+  it("includes sourceDomain in the returned ThumbnailContent when provided", () => {
+    const content = generator.buildThumbnailContent("My Title", "Author", "theverge.com");
+    expect(content.sourceDomain).toBe("theverge.com");
+  });
+
+  it("sets sourceDomain to undefined when not provided", () => {
+    const content = generator.buildThumbnailContent("My Title", "Author");
+    expect(content.sourceDomain).toBeUndefined();
+  });
+});
+
 describe("CoverGenerator.generateImage", () => {
   const generator = new CoverGenerator();
 
@@ -274,6 +288,36 @@ describe("CoverGenerator multi-resolution rendering", () => {
       const content = generator.buildThumbnailContent("Multi Resolution Test", "Claude");
       const buffer = await generator.generateImage(classic, resolution, content);
       expect(buffer[0]).toBe(0xff); // JPEG magic bytes
+      expect(buffer[1]).toBe(0xd8);
+      expect(buffer[2]).toBe(0xff);
+      expect(buffer.length).toBeGreaterThan(1000);
+    });
+  }
+});
+
+describe("CoverGenerator brutalist multi-resolution rendering", () => {
+  const generator = new CoverGenerator();
+  const brutalist = getFlavor("brutalist");
+  const resolutionNames = ["1264x1680", "1072x1448", "600x800"] as const;
+
+  for (const name of resolutionNames) {
+    it(`[brutalist] [${name}] generates valid SVG with correct dimensions`, async () => {
+      const resolution = getCoverResolution(name);
+      const content = generator.buildThumbnailContent("Multi Resolution Brutalist Test", "Claude", "theverge.com");
+      const svg = await generator.generateCoverSvg(brutalist, resolution, content);
+      expect(typeof svg).toBe("string");
+      expect(svg.length).toBeGreaterThan(0);
+      expect(svg).toContain("<svg");
+      expect(svg).toContain(`width="${resolution.width}"`);
+      expect(svg).toContain(`height="${resolution.height}"`);
+      expect(svg).toContain("<path");
+    });
+
+    it(`[brutalist] [${name}] generates valid JPEG from thumbnail`, async () => {
+      const resolution = getCoverResolution(name);
+      const content = generator.buildThumbnailContent("Multi Resolution Brutalist Test", "Claude", "theverge.com");
+      const buffer = await generator.generateImage(brutalist, resolution, content);
+      expect(buffer[0]).toBe(0xff);
       expect(buffer[1]).toBe(0xd8);
       expect(buffer[2]).toBe(0xff);
       expect(buffer.length).toBeGreaterThan(1000);

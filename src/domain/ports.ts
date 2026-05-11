@@ -42,12 +42,14 @@ export interface ThumbnailInput {
   readonly iconDataUri?: string;
   readonly width: number;
   readonly height: number;
+  readonly sourceDomain?: string;
 }
 
 export interface ChapterInput {
   readonly title: string;
   readonly author: string;
   readonly sourceDomain?: string;
+  readonly iconDataUri?: string;
 }
 
 export interface SatoriStyle {
@@ -137,6 +139,7 @@ export interface SatoriNode {
 
 export interface CoverFlavor {
   readonly name: string;
+  readonly titleWrap?: { readonly maxChars: number; readonly maxLines: number };
   buildThumbnail(input: ThumbnailInput): SatoriNode;
   buildHtmlChapter(input: ChapterInput): string;
   buildCoverCss(): string;

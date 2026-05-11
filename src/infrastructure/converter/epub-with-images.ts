@@ -21,6 +21,7 @@ import * as epubModule from "epub-gen-memory";
 const EPubClass = (epubModule as any).EPub;
 
 type EpubBufferMap = Map<string, { buffer: Buffer; format: string }>;
+type ExtraOebpsFile = { path: string; buffer: Buffer };
 
 function isDataUri(image: Record<string, unknown>): boolean {
   return typeof image.url === "string" && image.url.startsWith("data:");
@@ -47,6 +48,22 @@ function fillImageBuffers(images: any[], bufferMap: EpubBufferMap, log: (msg: st
       image.data = bufferData.buffer;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       log(`Assigned buffer to ${image.id}`);
+    }
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function writeExtraOebpsFiles(extraFiles: ExtraOebpsFile[], oebps: any, log: (msg: string) => void): void {
+  for (const { path: filePath, buffer } of extraFiles) {
+    const parts = filePath.split("/");
+    const fileName = parts.at(-1) ?? filePath;
+    const folderPath = parts.slice(0, -1).join("/");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const targetFolder = folderPath ? oebps.folder(folderPath) : oebps;
+    if (targetFolder) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      targetFolder.file(fileName, buffer);
+      log(`Embedded extra OEBPS file: ${filePath} (${buffer.length} bytes)`);
     }
   }
 }
@@ -103,23 +120,6 @@ export function createEpubWithPredownloadedImages(
   // Override downloadAllImages to match pre-downloaded images to detected URLs
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   (epub).downloadAllImages = function (): void {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (!this.images?.length) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      this.log?.("No images to embed");
-      return;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    this.log?.("Embedding pre-downloaded images (skipping network download)");
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const bufferMap = (this).__imageBufferMap as EpubBufferMap | undefined;
-    if (bufferMap) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      fillImageBuffers(this.images, bufferMap, (msg) => { this.log?.(msg); });
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const oebps = this.zip?.folder("OEBPS");
     if (!oebps) {
@@ -128,23 +128,44 @@ export function createEpubWithPredownloadedImages(
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-    const imagesFolder = oebps.folder("images");
-    if (!imagesFolder) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (this.images?.length) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      this.warn?.("Could not create OEBPS/images folder");
-      return;
+      this.log?.("Embedding pre-downloaded images (skipping network download)");
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const bufferMap = (this).__imageBufferMap as EpubBufferMap | undefined;
+      if (bufferMap) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        fillImageBuffers(this.images, bufferMap, (msg) => { this.log?.(msg); });
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+      const imagesFolder = oebps.folder("images");
+      if (imagesFolder) {
+        writeImageFiles(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+          this.images,
+          imagesFolder,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (msg) => { this.log?.(msg); },
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          (msg) => { this.warn?.(msg); },
+        );
+      }
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      this.log?.("No images to embed");
     }
 
-    writeImageFiles(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      this.images,
-      imagesFolder,
+    // Write any extra OEBPS files (e.g. fonts) requested by the active flavor.
+    // This runs regardless of whether there are images to embed.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const extraFiles = (this).__extraOebpsFiles as ExtraOebpsFile[] | undefined;
+    if (extraFiles) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (msg) => { this.log?.(msg); },
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (msg) => { this.warn?.(msg); },
-    );
+      writeExtraOebpsFiles(extraFiles, oebps, (msg) => { this.log?.(msg); });
+    }
   };
 
   return epub;

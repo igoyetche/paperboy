@@ -1,7 +1,7 @@
 # Project Status Dashboard
 
-> Last updated: 2026-05-08
-> Last ticket code: PB-026
+> Last updated: 2026-05-11
+> Last ticket code: PB-027
 
 ## Active Work
 
@@ -24,6 +24,7 @@ _No active work._
 | PB-023 | Fix SonarQube Open Issues | — | 2026-04-24 | — |
 | PB-018 | Markdown Frontmatter Metadata | specs/main-spec.md | 2026-04-16 | plans/done/PB-018-2026-04-16-markdown-frontmatter-metadata.md |
 | PB-008 | EPUB Cover Generation | specs/main-spec.md | 2026-04-22 | plans/done/PB-008-2026-04-22-epub-cover.md, plans/done/PB-008-2026-04-22-bugfix-cover-image-ordering.md |
+| PB-027 | Brutalist Cover Flavor | specs/main-spec.md | 2026-05-11 | plans/done/PB-027-2026-05-11-brutalist-cover-flavor.md |
 | PB-026 | Redesigned Thumbnail Rendering | specs/main-spec.md | 2026-05-07 | plans/done/PB-026-2026-05-07-redesigned-thumbnail-rendering.md |
 | PB-025 | EPUB Navigation Support | specs/main-spec.md | 2026-05-07 | plans/done/PB-025-2026-05-06-epub-navigation-support.md |
 | PB-022 | Fix: Missing asset copy in build | — | 2026-04-22 | — |

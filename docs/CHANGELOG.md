@@ -4,6 +4,24 @@ Tracks every change to specs, designs, and plans that deviates from the original
 
 ---
 
+## 2026-05-11 — PB-027: Brutalist Cover Flavor — Complete
+
+**Feature:** Added `brutalist` as a second bundled `CoverFlavor` selectable via `PAPERBOY_COVER_FLAVOR=brutalist`. The brutalist flavor features a newspaper-style cover with derived accent colors from the article's source domain, Inter Bold typography, and a paper-colored icon backplate.
+
+**Spec changes:**
+- **`docs/specs/main-spec.md` FR-37**: Added documentation for `ThumbnailInput.sourceDomain?` (optional domain string for accent-color derivation) and `CoverFlavor.titleWrap?` (optional title-wrapping parameters: `{ maxChars, maxLines }`). Every flavor receives `ThumbnailInput` and may provide `titleWrap` to customize title line-wrapping behavior.
+- **`docs/specs/main-spec.md` FR-38**: Updated to list both `classic` and `brutalist` as registered bundled flavors. Clarified that `brutalist` provides newspaper-style masthead with derived accent color and Inter Bold typography.
+
+**Implementation highlights:**
+- `_shared/palette.ts`: FNV-1a hashing for deterministic, domain-keyed accent color palette generation.
+- Brutalist flavor: four source files (`thumbnail.ts`, `chapter.ts`, `css.ts`, `tokens.ts`), color palette (`INK`, `PAPER`, `ACCENT_INK`), three Satori nodes (masthead, title hero, footer), icon-on-backplate composition.
+- Inter Bold font (SIL-OFL) bundled at `flavors/brutalist/assets/fonts/inter-bold.ttf` (~340 KB) and shipped inside EPUB at `OEBPS/fonts/inter-bold.ttf` via `epub-with-images` extra files mechanism, with `@font-face` declaration in chapter CSS.
+- `CoverGenerator` extended to load Inter Bold buffer at construction and provide `getExtraEpubFiles()` for font embedding.
+- Postbuild extended to copy flavor-internal assets (`brutalist/assets/`) to `dist/` for runtime access.
+- 524 tests passing (up from 503), including brutalist fixture pair and end-to-end render tests.
+
+---
+
 ## 2026-04-24 — PB-023: Fix SonarQube Open Issues — Complete
 
 Resolved 8 open SonarQube code-smell issues across the codebase. Fixes included: reducing cognitive complexity in `ImageProcessor`, `image-downloading-real-sample` test, and `validate-epub.mjs`; consolidating duplicate imports in `dotenv-loader` and `title-resolver`; replacing promise chains with top-level await in `cli-entry`; removing unused variables in watcher tests; applying optional-chaining and `replaceAll` simplifications across multiple files. The final 2 remaining issues (HTML file in `docs/` and a TODO comment) were resolved in a follow-up commit.

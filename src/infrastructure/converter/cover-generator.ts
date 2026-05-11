@@ -108,7 +108,9 @@ export function wrapTitle(
  */
 export class CoverGenerator {
   private readonly iconDataUri: string;
+  private readonly brutalistIconDataUri: string;
   private readonly fonts: SatoriFont[];
+  private readonly interBoldBuffer: Buffer;
 
   constructor() {
     const dir = dirname(fileURLToPath(import.meta.url));
@@ -129,6 +131,32 @@ export class CoverGenerator {
         style: "normal" as const,
       },
     ];
+
+    // Load brutalist flavor icon (inverted, transparent background)
+    const brutalistIconPath = join(dir, "flavors", "brutalist", "assets", "main-icon-inverted.png");
+    const brutalistIconBuffer = readFileSync(brutalistIconPath);
+    this.brutalistIconDataUri = `data:image/png;base64,${brutalistIconBuffer.toString("base64")}`;
+
+    // Load Inter Bold for brutalist flavor Satori rendering
+    const interBoldPath = join(dir, "flavors", "brutalist", "assets", "fonts", "inter-bold.ttf");
+    this.interBoldBuffer = readFileSync(interBoldPath);
+    this.fonts.push({
+      name: "Inter",
+      data: this.interBoldBuffer,
+      weight: 700 as const,
+      style: "normal" as const,
+    });
+  }
+
+  /**
+   * Returns extra OEBPS files to embed in the EPUB for the given flavor.
+   * Currently only the brutalist flavor requires a font file.
+   */
+  getExtraEpubFiles(flavorName: string): Array<{ path: string; buffer: Buffer }> {
+    if (flavorName === "brutalist") {
+      return [{ path: "fonts/inter-bold.ttf", buffer: this.interBoldBuffer }];
+    }
+    return [];
   }
 
   /**
@@ -154,7 +182,8 @@ export class CoverGenerator {
     sourceUrl?: string,
   ): string {
     const sourceDomain = sourceUrl ? extractDomain(sourceUrl) : undefined;
-    const input: ChapterInput = { title, author, sourceDomain };
+    const iconDataUri = flavor.name === "brutalist" ? this.brutalistIconDataUri : undefined;
+    const input: ChapterInput = { title, author, sourceDomain, iconDataUri };
     return flavor.buildHtmlChapter(input);
   }
 
@@ -209,12 +238,21 @@ export class CoverGenerator {
   }
 
   /**
-   * Convenience: build the ThumbnailContent from title and author for callers
-   * that don't compose the object themselves. Wraps the title and attaches the
+   * Convenience: build the ThumbnailContent from title, author, and optional
+   * source domain for callers that don't compose the object themselves.
+   * Wraps the title using the flavor's titleWrap settings (or the defaults
+   * maxChars=13, maxLines=4 when no flavor is provided) and attaches the
    * bundled icon data URI.
    */
-  buildThumbnailContent(title: string, author: string): ThumbnailContent {
-    const titleLines = wrapTitle(title, 13, 4);
-    return { titleLines, author, iconDataUri: this.iconDataUri };
+  buildThumbnailContent(
+    title: string,
+    author: string,
+    sourceDomain?: string,
+    flavor?: CoverFlavor,
+  ): ThumbnailContent {
+    const { maxChars, maxLines } = flavor?.titleWrap ?? { maxChars: 13, maxLines: 4 };
+    const titleLines = wrapTitle(title, maxChars, maxLines);
+    const iconDataUri = flavor?.name === "brutalist" ? this.brutalistIconDataUri : this.iconDataUri;
+    return { titleLines, author, iconDataUri, sourceDomain };
   }
 }
