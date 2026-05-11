@@ -33,9 +33,9 @@ describe("buildCoverCss (brutalist)", () => {
     expect(css).toContain(".cover");
   });
 
-  it("declares .masthead class with INK background", () => {
+  it("declares .brut-bar class with INK background", () => {
     const css = buildCoverCss();
-    expect(css).toContain(".masthead");
+    expect(css).toContain(".brut-bar");
     expect(css).toContain(INK);
   });
 
@@ -45,9 +45,9 @@ describe("buildCoverCss (brutalist)", () => {
     expect(css).toContain("text-transform: uppercase");
   });
 
-  it("declares .footer class", () => {
+  it("declares .brut-footer class", () => {
     const css = buildCoverCss();
-    expect(css).toContain(".footer");
+    expect(css).toContain(".brut-footer");
   });
 
   it("declares .byline class with ACCENT_INK color", () => {
@@ -67,8 +67,8 @@ describe("buildCoverCss (brutalist)", () => {
     expect(css).toContain("text-transform: uppercase");
   });
 
-  it("declares .issue class", () => {
+  it("declares .edition class", () => {
     const css = buildCoverCss();
-    expect(css).toContain(".issue");
+    expect(css).toContain(".edition");
   });
 });

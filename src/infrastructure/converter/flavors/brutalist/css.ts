@@ -7,14 +7,17 @@ export function buildCoverCss(): string {
   font-weight: 700;
   font-style: normal;
 }
-html, body { margin: 0; padding: 0; }
-body { font-family: "${FONT_FAMILY}", sans-serif; }
-.cover { display: flex; flex-direction: column; height: 100vh; background: ${PAPER}; }
-.masthead { display: flex; flex-direction: row; justify-content: space-between; align-items: center; background: ${INK}; padding: 1.2em 1.6em; }
-.kicker { color: ${PAPER}; font-size: 0.75em; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; }
-.issue { color: ${PAPER}; font-size: 0.65em; font-weight: 700; letter-spacing: 0.2em; opacity: 0.6; }
-.title { color: ${INK}; font-family: "${FONT_FAMILY}", sans-serif; font-size: 3.4em; font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; text-transform: uppercase; padding: 1.5em 1.2em 0.5em; margin: 0; flex: 1; }
-.footer { display: flex; flex-direction: row; align-items: center; padding: 1em 1.6em; min-height: 5em; }
-.byline { color: ${ACCENT_INK}; font-size: 0.9em; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-.source { color: ${ACCENT_INK}; font-size: 0.7em; letter-spacing: 0.15em; text-transform: uppercase; margin-top: 0.3em; opacity: 0.85; }`;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: ${PAPER}; font-family: "${FONT_FAMILY}", Helvetica, Arial, sans-serif; }
+.cover { width: 100%; min-height: 100%; background: ${PAPER}; }
+.brut-bar { background: ${INK}; color: ${PAPER}; padding: 1.1em 8%; overflow: hidden; }
+.brut-bar .edition { float: right; font-size: 0.88em; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: ${PAPER}; opacity: 0.6; padding-top: 0.08em; }
+.brut-bar .kicker { display: block; font-size: 1.05em; font-weight: 700; letter-spacing: 0.5em; text-transform: uppercase; color: ${PAPER}; }
+.brut-body { padding: 9% 8% 6%; min-height: 15em; }
+.title { font-weight: 800; line-height: 1.02; letter-spacing: -0.03em; text-transform: uppercase; color: ${INK}; }
+.brut-footer { padding: 1.4em 8%; min-height: 9em; overflow: hidden; }
+.brut-footer .icon { float: right; width: 5.4em; height: 5.4em; display: block; }
+.byline { padding-top: 0.6em; }
+.byline .author { font-size: 1.2em; font-weight: 700; letter-spacing: 0.04em; color: ${ACCENT_INK}; margin: 0 0 0.35em; }
+.byline .source { font-size: 0.75em; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: ${ACCENT_INK}; opacity: 0.85; }`;
 }

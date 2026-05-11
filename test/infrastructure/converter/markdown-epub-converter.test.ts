@@ -640,7 +640,7 @@ describe("MarkdownEpubConverter with brutalist flavor — end-to-end EPUB struct
         const chapterFile = loadedZip.file(chapterPaths[0] ?? "");
         if (chapterFile) {
           const html = await chapterFile.async("string");
-          expect(html).toContain('class="masthead"');
+          expect(html).toContain('class="brut-bar"');
           expect(html).toContain("background:");
         }
       }

@@ -9,34 +9,54 @@ function escapeXml(text: string): string {
     .replaceAll('"', "&quot;");
 }
 
+function titleFontSize(title: string): string {
+  const wc = title.trim().split(/\s+/).filter(Boolean).length;
+  if (wc <= 4) return "6.4em";
+  if (wc <= 7) return "4.9em";
+  if (wc <= 10) return "4.1em";
+  if (wc <= 14) return "3.4em";
+  return "2.9em";
+}
+
 export function buildHtmlChapter(input: ChapterInput): string {
-  const { title, author, sourceDomain } = input;
+  const { title, author, sourceDomain, iconDataUri } = input;
 
   const seed = sourceDomain ?? title;
   const accent = accentFor(seed);
   const issueNumber = issueNumberFor(seed);
-
   const hasAuthor = author !== "";
-  let primaryByline: string;
+  const fontSize = titleFontSize(title);
+
+  let authorLine: string;
+  let sourceLine: string;
   if (hasAuthor) {
-    primaryByline = escapeXml(author);
-  } else if (sourceDomain === undefined) {
-    primaryByline = "";
+    authorLine = `<p class="author">${escapeXml(author)}</p>`;
+    sourceLine = sourceDomain !== undefined
+      ? `\n      <p class="source">${escapeXml(sourceDomain)}</p>`
+      : "";
   } else {
-    primaryByline = escapeXml(sourceDomain.toUpperCase());
+    authorLine = sourceDomain !== undefined
+      ? `<p class="author">${escapeXml(sourceDomain.toUpperCase())}</p>`
+      : "";
+    sourceLine = "";
   }
-  const secondaryLine = hasAuthor && sourceDomain !== undefined
-    ? `\n    <div class="source">${escapeXml(sourceDomain)}</div>`
+
+  const iconHtml = iconDataUri !== undefined
+    ? `\n    <img class="icon" src="${iconDataUri}" alt="" />`
     : "";
 
   return `<div class="cover">
-  <header class="masthead">
-    <span class="kicker">PAPERBOY</span>
-    <span class="issue">№ ${issueNumber}</span>
-  </header>
-  <h1 class="title">${escapeXml(title)}</h1>
-  <footer class="footer" style="background:${accent};">
-    <div class="byline">${primaryByline}</div>${secondaryLine}
-  </footer>
+  <div class="brut-bar">
+    <span class="edition">&#x2116; ${issueNumber}</span>
+    <span class="kicker">Paperboy</span>
+  </div>
+  <div class="brut-body">
+    <h1 class="title" style="font-size:${fontSize};">${escapeXml(title)}</h1>
+  </div>
+  <div class="brut-footer" style="background:${accent};">${iconHtml}
+    <div class="byline">
+      ${authorLine}${sourceLine}
+    </div>
+  </div>
 </div>`;
 }

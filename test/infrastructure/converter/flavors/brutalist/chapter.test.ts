@@ -18,19 +18,19 @@ describe("buildHtmlChapter (brutalist)", () => {
     expect(html).toContain('class="cover"');
   });
 
-  it("contains header.masthead with PAPERBOY kicker", () => {
+  it("contains .brut-bar with Paperboy kicker", () => {
     const html = buildHtmlChapter(makeInput());
-    expect(html).toContain('class="masthead"');
-    expect(html).toContain("PAPERBOY");
+    expect(html).toContain('class="brut-bar"');
+    expect(html).toContain("Paperboy");
     expect(html).toContain('class="kicker"');
   });
 
-  it("masthead contains the issue number", () => {
+  it("brut-bar contains the issue number in .edition", () => {
     const input = makeInput({ sourceDomain: "theverge.com" });
     const html = buildHtmlChapter(input);
     const expected = issueNumberFor("theverge.com");
     expect(html).toContain(expected);
-    expect(html).toContain('class="issue"');
+    expect(html).toContain('class="edition"');
   });
 
   it("issue number derives from title when sourceDomain is absent", () => {
@@ -46,12 +46,20 @@ describe("buildHtmlChapter (brutalist)", () => {
     expect(html).toContain("My Article Title");
   });
 
-  it("contains footer with inline background style matching accentFor", () => {
+  it("title has inline font-size style based on word count", () => {
+    const shortTitle = buildHtmlChapter(makeInput({ title: "Short" }));
+    expect(shortTitle).toContain("font-size:6.4em");
+
+    const longTitle = buildHtmlChapter(makeInput({ title: "One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen" }));
+    expect(longTitle).toContain("font-size:2.9em");
+  });
+
+  it("contains .brut-footer with inline background style matching accentFor", () => {
     const input = makeInput({ sourceDomain: "nytimes.com" });
     const html = buildHtmlChapter(input);
     const expectedAccent = accentFor("nytimes.com");
     expect(html).toContain(`background:${expectedAccent}`);
-    expect(html).toContain('class="footer"');
+    expect(html).toContain('class="brut-footer"');
   });
 
   it("footer accent derives from title when sourceDomain is absent", () => {
@@ -59,6 +67,17 @@ describe("buildHtmlChapter (brutalist)", () => {
     const html = buildHtmlChapter(input);
     const expectedAccent = accentFor(input.title);
     expect(html).toContain(`background:${expectedAccent}`);
+  });
+
+  it("embeds icon as <img class=\"icon\"> when iconDataUri is provided", () => {
+    const html = buildHtmlChapter(makeInput({ iconDataUri: "data:image/png;base64,abc123" }));
+    expect(html).toContain('class="icon"');
+    expect(html).toContain("data:image/png;base64,abc123");
+  });
+
+  it("omits icon img when iconDataUri is absent", () => {
+    const html = buildHtmlChapter(makeInput({ iconDataUri: undefined }));
+    expect(html).not.toContain('class="icon"');
   });
 
   it("XML-escapes title with special characters", () => {

@@ -49,6 +49,7 @@ export interface ChapterInput {
   readonly title: string;
   readonly author: string;
   readonly sourceDomain?: string;
+  readonly iconDataUri?: string;
 }
 
 export interface SatoriStyle {

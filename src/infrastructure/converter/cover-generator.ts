@@ -182,7 +182,8 @@ export class CoverGenerator {
     sourceUrl?: string,
   ): string {
     const sourceDomain = sourceUrl ? extractDomain(sourceUrl) : undefined;
-    const input: ChapterInput = { title, author, sourceDomain };
+    const iconDataUri = flavor.name === "brutalist" ? this.brutalistIconDataUri : undefined;
+    const input: ChapterInput = { title, author, sourceDomain, iconDataUri };
     return flavor.buildHtmlChapter(input);
   }
 
