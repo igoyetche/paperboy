@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "postbuild": "node -e \"const{cpSync}=require('fs');cpSync('src/infrastructure/converter/assets','dist/infrastructure/converter/assets',{recursive:true})\" && node scripts/verify-assets.mjs",
+    "postbuild": "node -e \"const{cpSync}=require('fs');cpSync('src/infrastructure/converter/assets','dist/infrastructure/converter/assets',{recursive:true});cpSync('src/infrastructure/converter/flavors/brutalist/assets','dist/infrastructure/converter/flavors/brutalist/assets',{recursive:true})\" && node scripts/verify-assets.mjs",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "cli": "tsx src/cli-entry.ts",

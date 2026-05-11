@@ -177,6 +177,15 @@ describe("loadConfig", () => {
     expect(config.defaultCoverFlavor).toBe("classic");
   });
 
+  it("sets defaultCoverFlavor when PAPERBOY_COVER_FLAVOR=brutalist", () => {
+    Object.assign(process.env, {
+      ...requiredEnv(),
+      PAPERBOY_COVER_FLAVOR: "brutalist",
+    });
+    const config = loadConfig();
+    expect(config.defaultCoverFlavor).toBe("brutalist");
+  });
+
   it("defaults defaultCoverFlavor to 'classic' when PAPERBOY_COVER_FLAVOR is unset", () => {
     Object.assign(process.env, requiredEnv());
     const config = loadConfig();
@@ -196,7 +205,8 @@ describe("loadConfig", () => {
       ...requiredEnv(),
       PAPERBOY_COVER_FLAVOR: "nonexistent",
     });
-    expect(() => loadConfig()).toThrow("Valid options:");
+    expect(() => loadConfig()).toThrow("classic");
+    expect(() => loadConfig()).toThrow("brutalist");
   });
 
   // ---------------------------------------------------------------------------

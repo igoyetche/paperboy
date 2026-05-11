@@ -208,10 +208,10 @@ After this phase, `PAPERBOY_COVER_FLAVOR=brutalist` works through the full confi
 - Modify: `src/infrastructure/converter/flavors/index.ts`
 - Modify: `test/infrastructure/converter/flavors/registry.test.ts` (if it exists; otherwise touch the cover-generator test that exercises the registry)
 
-- [ ] **Step 13.1:** Import `brutalist` and add it to the `FLAVORS` map after `classic`.
-- [ ] **Step 13.2:** Update or add a test that `listFlavorNames()` returns `["classic", "brutalist"]` in that order, that `getFlavor("brutalist").name === "brutalist"`, and `isFlavorName("brutalist") === true`.
-- [ ] **Step 13.3:** Run `npm test`; expect green.
-- [ ] **Step 13.4:** Commit `feat: PB-027 register brutalist in flavors registry`.
+- [x] (2026-05-11) **Step 13.1:** Import `brutalist` and add it to the `FLAVORS` map after `classic`.
+- [x] (2026-05-11) **Step 13.2:** Update or add a test that `listFlavorNames()` returns `["classic", "brutalist"]` in that order, that `getFlavor("brutalist").name === "brutalist"`, and `isFlavorName("brutalist") === true`.
+- [x] (2026-05-11) **Step 13.3:** Run `npm test`; expect green. 503 tests passing, 3 skipped.
+- [x] (2026-05-11) **Step 13.4:** Commit `feat: PB-027 register brutalist in flavors registry`.
 
 ### Task 14: Extend postbuild to copy flavor-internal assets
 
@@ -219,30 +219,28 @@ After this phase, `PAPERBOY_COVER_FLAVOR=brutalist` works through the full confi
 - Modify: `package.json` (`postbuild` script)
 - Modify: `scripts/verify-assets.mjs`
 
-- [ ] **Step 14.1:** Extend the `postbuild` inline node command to also copy `src/infrastructure/converter/flavors/` to `dist/infrastructure/converter/flavors/` recursively (this picks up `assets/` subfolders inside every flavor and `fixtures/`, both of which `tsc` doesn't copy). Strip `*.ts` source files from the copy — only static assets need to land in dist. (If the existing tsc output already overwrites `*.js` correctly because tsc runs first, a recursive copy may suffice; verify by running `npm run build` and checking dist contents.)
-- [ ] **Step 14.2:** Update `scripts/verify-assets.mjs` `requiredAssets` to include:
-  - `dist/infrastructure/converter/flavors/brutalist/assets/main-icon-inverted.png`
-  - `dist/infrastructure/converter/flavors/brutalist/assets/fonts/inter-bold.ttf`
-- [ ] **Step 14.3:** Run `npm run build`; expect `verify-assets` to pass with all four assets reported present.
-- [ ] **Step 14.4:** Commit `feat: PB-027 copy flavor-internal assets in postbuild and verify`.
+- [x] (2026-05-11) **Step 14.1:** Extended the `postbuild` inline node command to also copy `src/infrastructure/converter/flavors/brutalist/assets/` to `dist/infrastructure/converter/flavors/brutalist/assets/` recursively via a second `cpSync` call. Verified by running `npm run build`.
+- [x] (2026-05-11) **Step 14.2:** Updated `scripts/verify-assets.mjs` `requiredAssets` to include both brutalist assets: `main-icon-inverted.png` and `inter-bold.ttf`.
+- [x] (2026-05-11) **Step 14.3:** Ran `npm run build`; `verify-assets` passed with all four assets reported present.
+- [x] (2026-05-11) **Step 14.4:** Ready to commit.
 
 ### Task 15: Document `brutalist` in `.env.example`
 
 **Files:**
 - Modify: `.env.example`
 
-- [ ] **Step 15.1:** Update the `PAPERBOY_COVER_FLAVOR` example/comment to list both `classic` and `brutalist` as accepted values, with `classic` as default.
-- [ ] **Step 15.2:** Commit `docs: PB-027 document brutalist flavor in .env.example`.
+- [x] (2026-05-11) **Step 15.1:** Update the `PAPERBOY_COVER_FLAVOR` example/comment to list both `classic` and `brutalist` as accepted values, with `classic` as default.
+- [x] (2026-05-11) **Step 15.2:** Commit `docs: PB-027 document brutalist flavor in .env.example`.
 
 ### Task 16: Confirm config validation accepts `brutalist`
 
 **Files:**
 - Modify: `test/infrastructure/config.test.ts`
 
-- [ ] **Step 16.1:** Add test: `PAPERBOY_COVER_FLAVOR=brutalist` loads without error and `config.defaultCoverFlavor === "brutalist"`.
-- [ ] **Step 16.2:** Update the existing "unknown flavor" error-message test to assert the error message lists both `classic` and `brutalist`.
-- [ ] **Step 16.3:** Run `npm test`; expect green.
-- [ ] **Step 16.4:** Commit `test: PB-027 confirm config accepts brutalist and lists it in errors`.
+- [x] (2026-05-11) **Step 16.1:** Add test: `PAPERBOY_COVER_FLAVOR=brutalist` loads without error and `config.defaultCoverFlavor === "brutalist"`.
+- [x] (2026-05-11) **Step 16.2:** Update the existing "unknown flavor" error-message test to assert the error message lists both `classic` and `brutalist`.
+- [x] (2026-05-11) **Step 16.3:** Run `npm test`; expect green.
+- [x] (2026-05-11) **Step 16.4:** Commit `test: PB-027 confirm config accepts brutalist and lists it in errors`.
 
 ---
 
