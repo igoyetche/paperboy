@@ -9,6 +9,7 @@
 
 import type { CoverFlavor } from "../../../domain/ports.js";
 import { classic } from "./classic/index.js";
+import { brutalist } from "./brutalist/index.js";
 
 /**
  * All registered flavors. Keys are the valid values for PAPERBOY_COVER_FLAVOR.
@@ -16,6 +17,7 @@ import { classic } from "./classic/index.js";
  */
 const FLAVORS = {
   classic,
+  brutalist,
 } satisfies Record<string, CoverFlavor>;
 
 /** Union of valid flavor name strings. */
