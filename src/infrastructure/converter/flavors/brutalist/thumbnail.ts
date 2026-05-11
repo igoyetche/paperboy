@@ -164,28 +164,14 @@ export function buildThumbnail(input: ThumbnailInput): SatoriNode {
   const footerChildren: SatoriNode[] = [bylineNode];
 
   if (iconDataUri !== undefined) {
-    const iconContainerSize = s(130);
-    const iconPadding = s(10);
+    const iconSize = s(100);
     footerChildren.push({
-      type: "div",
+      type: "img",
       props: {
-        style: {
-          display: "flex" as const,
-          alignItems: "center" as const,
-          justifyContent: "center" as const,
-          backgroundColor: PAPER,
-          width: iconContainerSize,
-          height: iconContainerSize,
-          padding: iconPadding,
-        },
-        children: {
-          type: "img",
-          props: {
-            src: iconDataUri,
-            width: iconContainerSize - iconPadding * 2,
-            height: iconContainerSize - iconPadding * 2,
-          },
-        },
+        src: iconDataUri,
+        width: iconSize,
+        height: iconSize,
+        style: { display: "flex" as const },
       },
     });
   }

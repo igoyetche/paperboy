@@ -113,14 +113,14 @@ describe("buildThumbnail (brutalist)", () => {
     expect(JSON.stringify(footer)).toContain("BBC.COM");
   });
 
-  it("footer includes icon wrapped in paper-colored backplate when iconDataUri is provided", () => {
+  it("footer includes icon directly on accent background (no paper-colored backplate) when iconDataUri is provided", () => {
     const input = makeInput({ iconDataUri: "data:image/png;base64,abc123" });
     const node = buildThumbnail(input);
     const children = node.props.children as readonly SatoriNode[];
     const footer = children[2];
     const footerStr = JSON.stringify(footer);
     expect(footerStr).toContain("data:image/png;base64,abc123");
-    expect(footerStr).toContain(PAPER);
+    expect(footerStr).not.toContain(PAPER);
   });
 
   it("footer omits icon block when iconDataUri is undefined", () => {

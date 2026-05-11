@@ -108,6 +108,7 @@ export function wrapTitle(
  */
 export class CoverGenerator {
   private readonly iconDataUri: string;
+  private readonly brutalistIconDataUri: string;
   private readonly fonts: SatoriFont[];
   private readonly interBoldBuffer: Buffer;
 
@@ -130,6 +131,11 @@ export class CoverGenerator {
         style: "normal" as const,
       },
     ];
+
+    // Load brutalist flavor icon (inverted, transparent background)
+    const brutalistIconPath = join(dir, "flavors", "brutalist", "assets", "main-icon-inverted.png");
+    const brutalistIconBuffer = readFileSync(brutalistIconPath);
+    this.brutalistIconDataUri = `data:image/png;base64,${brutalistIconBuffer.toString("base64")}`;
 
     // Load Inter Bold for brutalist flavor Satori rendering
     const interBoldPath = join(dir, "flavors", "brutalist", "assets", "fonts", "inter-bold.ttf");
@@ -245,6 +251,7 @@ export class CoverGenerator {
   ): ThumbnailContent {
     const { maxChars, maxLines } = flavor?.titleWrap ?? { maxChars: 13, maxLines: 4 };
     const titleLines = wrapTitle(title, maxChars, maxLines);
-    return { titleLines, author, iconDataUri: this.iconDataUri, sourceDomain };
+    const iconDataUri = flavor?.name === "brutalist" ? this.brutalistIconDataUri : this.iconDataUri;
+    return { titleLines, author, iconDataUri, sourceDomain };
   }
 }
