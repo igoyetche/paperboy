@@ -295,6 +295,36 @@ describe("CoverGenerator multi-resolution rendering", () => {
   }
 });
 
+describe("CoverGenerator brutalist multi-resolution rendering", () => {
+  const generator = new CoverGenerator();
+  const brutalist = getFlavor("brutalist");
+  const resolutionNames = ["1264x1680", "1072x1448", "600x800"] as const;
+
+  for (const name of resolutionNames) {
+    it(`[brutalist] [${name}] generates valid SVG with correct dimensions`, async () => {
+      const resolution = getCoverResolution(name);
+      const content = generator.buildThumbnailContent("Multi Resolution Brutalist Test", "Claude", "theverge.com");
+      const svg = await generator.generateCoverSvg(brutalist, resolution, content);
+      expect(typeof svg).toBe("string");
+      expect(svg.length).toBeGreaterThan(0);
+      expect(svg).toContain("<svg");
+      expect(svg).toContain(`width="${resolution.width}"`);
+      expect(svg).toContain(`height="${resolution.height}"`);
+      expect(svg).toContain("<path");
+    });
+
+    it(`[brutalist] [${name}] generates valid JPEG from thumbnail`, async () => {
+      const resolution = getCoverResolution(name);
+      const content = generator.buildThumbnailContent("Multi Resolution Brutalist Test", "Claude", "theverge.com");
+      const buffer = await generator.generateImage(brutalist, resolution, content);
+      expect(buffer[0]).toBe(0xff);
+      expect(buffer[1]).toBe(0xd8);
+      expect(buffer[2]).toBe(0xff);
+      expect(buffer.length).toBeGreaterThan(1000);
+    });
+  }
+});
+
 describe("CoverGenerator layout — title line count", () => {
   const generator = new CoverGenerator();
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Paperboy cover sample</title>
+<style>
+@font-face {
+  font-family: "Inter";
+  src: url("fonts/inter-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+html, body { margin: 0; padding: 0; }
+body { font-family: "Inter", sans-serif; }
+.cover { display: flex; flex-direction: column; height: 100vh; background: #f4efe2; }
+.masthead { display: flex; flex-direction: row; justify-content: space-between; align-items: center; background: #141210; padding: 1.2em 1.6em; }
+.kicker { color: #f4efe2; font-size: 0.75em; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; }
+.issue { color: #f4efe2; font-size: 0.65em; font-weight: 700; letter-spacing: 0.2em; opacity: 0.6; }
+.title { color: #141210; font-family: "Inter", sans-serif; font-size: 3.4em; font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; text-transform: uppercase; padding: 1.5em 1.2em 0.5em; margin: 0; flex: 1; }
+.footer { display: flex; flex-direction: row; align-items: center; padding: 1em 1.6em; min-height: 5em; }
+.byline { color: #fbf7ee; font-size: 0.9em; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.source { color: #fbf7ee; font-size: 0.7em; letter-spacing: 0.15em; text-transform: uppercase; margin-top: 0.3em; opacity: 0.85; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <header class="masthead">
+    <span class="kicker">PAPERBOY</span>
+    <span class="issue">№ 621</span>
+  </header>
+  <h1 class="title">The Quick Brown Fox Jumps Over the Lazy Dog</h1>
+  <footer class="footer" style="background:hsl(31, 55%, 42%);">
+    <div class="byline">Claude</div>
+    <div class="source">www.theverge.com</div>
+  </footer>
+</div>
+</body>
+</html>
