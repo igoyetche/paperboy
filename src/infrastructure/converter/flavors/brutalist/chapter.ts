@@ -17,7 +17,14 @@ export function buildHtmlChapter(input: ChapterInput): string {
   const issueNumber = issueNumberFor(seed);
 
   const hasAuthor = author !== "";
-  const primaryByline = hasAuthor ? escapeXml(author) : (sourceDomain !== undefined ? escapeXml(sourceDomain.toUpperCase()) : "");
+  let primaryByline: string;
+  if (hasAuthor) {
+    primaryByline = escapeXml(author);
+  } else if (sourceDomain === undefined) {
+    primaryByline = "";
+  } else {
+    primaryByline = escapeXml(sourceDomain.toUpperCase());
+  }
   const secondaryLine = hasAuthor && sourceDomain !== undefined
     ? `\n    <div class="source">${escapeXml(sourceDomain)}</div>`
     : "";

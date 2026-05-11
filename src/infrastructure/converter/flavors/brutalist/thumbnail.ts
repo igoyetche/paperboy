@@ -110,7 +110,12 @@ export function buildThumbnail(input: ThumbnailInput): SatoriNode {
     },
   };
 
-  const primaryByline = author !== "" ? author : (sourceDomain !== undefined ? sourceDomain.toUpperCase() : "");
+  let primaryByline: string;
+  if (author === "") {
+    primaryByline = sourceDomain === undefined ? "" : sourceDomain.toUpperCase();
+  } else {
+    primaryByline = author;
+  }
 
   const bylineChildren: SatoriNode[] = [
     {

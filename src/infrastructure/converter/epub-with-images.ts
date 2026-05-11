@@ -52,6 +52,22 @@ function fillImageBuffers(images: any[], bufferMap: EpubBufferMap, log: (msg: st
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function writeExtraOebpsFiles(extraFiles: ExtraOebpsFile[], oebps: any, log: (msg: string) => void): void {
+  for (const { path: filePath, buffer } of extraFiles) {
+    const parts = filePath.split("/");
+    const fileName = parts.at(-1) ?? filePath;
+    const folderPath = parts.slice(0, -1).join("/");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const targetFolder = folderPath ? oebps.folder(folderPath) : oebps;
+    if (targetFolder) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      targetFolder.file(fileName, buffer);
+      log(`Embedded extra OEBPS file: ${filePath} (${buffer.length} bytes)`);
+    }
+  }
+}
+
 function writeImageFiles(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   images: any[],
@@ -147,19 +163,8 @@ export function createEpubWithPredownloadedImages(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const extraFiles = (this).__extraOebpsFiles as ExtraOebpsFile[] | undefined;
     if (extraFiles) {
-      for (const { path: filePath, buffer } of extraFiles) {
-        const parts = filePath.split("/");
-        const fileName = parts.at(-1) ?? filePath;
-        const folderPath = parts.slice(0, -1).join("/");
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const targetFolder = folderPath ? oebps.folder(folderPath) : oebps;
-        if (targetFolder) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          targetFolder.file(fileName, buffer);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          this.log?.(`Embedded extra OEBPS file: ${filePath} (${buffer.length} bytes)`);
-        }
-      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      writeExtraOebpsFiles(extraFiles, oebps, (msg) => { this.log?.(msg); });
     }
   };
 

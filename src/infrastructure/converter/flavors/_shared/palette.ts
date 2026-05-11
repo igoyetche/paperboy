@@ -10,7 +10,7 @@
 export function fnv1a32(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
+    h ^= s.codePointAt(i) ?? 0;
     h = Math.imul(h, 16777619) >>> 0;
   }
   return h;
