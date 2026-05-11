@@ -5,14 +5,11 @@
 
 ## Active Work
 
-| Code | Feature | Phase | Plan |
-|------|---------|-------|------|
-| PB-027 | Brutalist Cover Flavor | 🔄 In Progress | plans/active/PB-027-brutalist-cover-flavor.md |
+_No active work._
 
 ## Backlog
 
 | Code | Feature | Phase | Specs Affected | Plan | Priority |
-| PB-027 | Brutalist Cover Flavor | 🔄 In Progress | specs/main-spec.md | plans/active/PB-027-brutalist-cover-flavor.md | Medium |
 | PB-020 | curl --impersonate Cloudflare Bypass | Feature | specs/PB-016-image-downloading-spec.md | — | Medium |
 | PB-011 | Encrypted Configuration Storage | Feature | specs/main-spec.md | — | High |
 | PB-006 | Trusted HTTPS Certificate | Design | specs/main-spec.md | — | Medium |
@@ -27,6 +24,7 @@
 | PB-023 | Fix SonarQube Open Issues | — | 2026-04-24 | — |
 | PB-018 | Markdown Frontmatter Metadata | specs/main-spec.md | 2026-04-16 | plans/done/PB-018-2026-04-16-markdown-frontmatter-metadata.md |
 | PB-008 | EPUB Cover Generation | specs/main-spec.md | 2026-04-22 | plans/done/PB-008-2026-04-22-epub-cover.md, plans/done/PB-008-2026-04-22-bugfix-cover-image-ordering.md |
+| PB-027 | Brutalist Cover Flavor | specs/main-spec.md | 2026-05-11 | plans/done/PB-027-2026-05-11-brutalist-cover-flavor.md |
 | PB-026 | Redesigned Thumbnail Rendering | specs/main-spec.md | 2026-05-07 | plans/done/PB-026-2026-05-07-redesigned-thumbnail-rendering.md |
 | PB-025 | EPUB Navigation Support | specs/main-spec.md | 2026-05-07 | plans/done/PB-025-2026-05-06-epub-navigation-support.md |
 | PB-022 | Fix: Missing asset copy in build | — | 2026-04-22 | — |
